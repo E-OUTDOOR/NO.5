@@ -87,6 +87,7 @@
             color: #718096;
             margin-bottom: 25px;
             font-size: 14px;
+            min-height: 20px;
         }
 
         .form-section, .action-buttons {
@@ -274,7 +275,7 @@
     <!-- ==================== HALAMAN 1: BKU UTAMA ==================== -->
     <div id="page-bku">
         <h2>Buku Kas Umum (BKU)</h2>
-        <div class="subtitle" id="title-instansi">Dinas Pendidikan Pemuda dan Olahraga Kabupaten Pegunungan Arfak — Tahun 2026</div>
+        <div class="subtitle" id="title-instansi"></div>
 
         <!-- Generator Per Subkegiatan -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
@@ -365,12 +366,12 @@
             <div class="ttd-box">
                 <p>Mengetahui,<br>PPTK</p>
                 <div class="ttd-space"></div>
-                <p><b id="lbl-pa">Prengki Dowansiba, S.Pd.</b><br><span id="lbl-nip-pa">NIP. 197820317 200502 1 003</span></p>
+                <p><b id="lbl-pa"></b><br><span id="lbl-nip-pa"></span></p>
             </div>
             <div class="ttd-box">
                 <p>Menyetujui,<br>Bendahara Kegiatan</p>
                 <div class="ttd-space"></div>
-                <p><b id="lbl-bendahara">Abbas Toansiba, S.Sos.</b><br><span id="lbl-nip-bendahara">NIP. 19770727 200212 1 008</span></p>
+                <p><b id="lbl-bendahara"></b><br><span id="lbl-nip-bendahara"></span></p>
             </div>
         </div>
 
@@ -429,11 +430,11 @@
             <div class="form-grid" style="margin-top: 12px;">
                 <div class="form-group">
                     <label>Nama Instansi:</label>
-                    <input type="text" id="input-instansi" value="Dinas Pendidikan Pemuda dan Olahraga Kabupaten Pegunungan Arfak" oninput="updateHeader()">
+                    <input type="text" id="input-instansi" value="" placeholder="Masukkan nama instansi..." oninput="updateHeader()">
                 </div>
                 <div class="form-group">
                     <label>Periode:</label>
-                    <input type="text" id="input-periode" value="November 2026" oninput="updateHeader()">
+                    <input type="text" id="input-periode" value="" placeholder="Masukkan periode..." oninput="updateHeader()">
                 </div>
             </div>
         </div>
@@ -443,19 +444,19 @@
             <div class="form-grid" style="margin-top: 12px;">
                 <div class="form-group">
                     <label>PPTK:</label>
-                    <input type="text" id="input-pa" value="Prengki Dowansiba, S.Pd." oninput="updateHeader()">
+                    <input type="text" id="input-pa" value="" placeholder="Masukkan nama PPTK..." oninput="updateHeader()">
                 </div>
                 <div class="form-group">
                     <label>NIP PPTK:</label>
-                    <input type="text" id="input-nip-pa" value="NIP. 197820317 200502 1 003" oninput="updateHeader()">
+                    <input type="text" id="input-nip-pa" value="" placeholder="Masukkan NIP PPTK..." oninput="updateHeader()">
                 </div>
                 <div class="form-group">
                     <label>Bendahara Kegiatan:</label>
-                    <input type="text" id="input-bendahara" value="Abbas Toansiba, S.Sos." oninput="updateHeader()">
+                    <input type="text" id="input-bendahara" value="" placeholder="Masukkan nama Bendahara..." oninput="updateHeader()">
                 </div>
                 <div class="form-group">
                     <label>NIP Bendahara Kegiatan:</label>
-                    <input type="text" id="input-nip-bendahara" value="NIP. 19770727 200212 1 008" oninput="updateHeader()">
+                    <input type="text" id="input-nip-bendahara" value="" placeholder="Masukkan NIP Bendahara..." oninput="updateHeader()">
                 </div>
             </div>
         </div>
@@ -658,12 +659,12 @@
             if (Array.isArray(data.pengaturan)) {
                 const map = {};
                 data.pengaturan.forEach(item => { map[item.Key] = item.Value; });
-                if (map.instansi) document.getElementById('input-instansi').value = map.instansi;
-                if (map.periode) document.getElementById('input-periode').value = map.periode;
-                if (map.pa_nama) document.getElementById('input-pa').value = map.pa_nama;
-                if (map.pa_nip) document.getElementById('input-nip-pa').value = map.pa_nip;
-                if (map.bendahara_nama) document.getElementById('input-bendahara').value = map.bendahara_nama;
-                if (map.bendahara_nip) document.getElementById('input-nip-bendahara').value = map.bendahara_nip;
+                if (map.instansi !== undefined) document.getElementById('input-instansi').value = map.instansi;
+                if (map.periode !== undefined) document.getElementById('input-periode').value = map.periode;
+                if (map.pa_nama !== undefined) document.getElementById('input-pa').value = map.pa_nama;
+                if (map.pa_nip !== undefined) document.getElementById('input-nip-pa').value = map.pa_nip;
+                if (map.bendahara_nama !== undefined) document.getElementById('input-bendahara').value = map.bendahara_nama;
+                if (map.bendahara_nip !== undefined) document.getElementById('input-nip-bendahara').value = map.bendahara_nip;
                 updateHeader();
             }
 
@@ -918,10 +919,10 @@
         if (dataTransaksi.length === 0) return;
 
         const transaksiTerakhir = dataTransaksi[dataTransaksi.length - 1];
-        const periodeAktif = document.getElementById('input-periode').value;
+        const periodeAktif = document.getElementById('input-periode').value.trim();
         let defaultJudul = (arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex])
             ? arsipBKU[arsipBkuAktifIndex].judul
-            : (selectedSubkeg || subkegiatanAktifTerakhir || `BKU ${periodeAktif} (s.d. ${transaksiTerakhir.tanggal})`);
+            : (selectedSubkeg || subkegiatanAktifTerakhir || (periodeAktif ? `BKU ${periodeAktif} (s.d. ${transaksiTerakhir.tanggal})` : `BKU (s.d. ${transaksiTerakhir.tanggal})`));
 
         let judulArsip = prompt(`Masukkan Nama / Keterangan Arsip BKU:`, defaultJudul);
         if (!judulArsip || judulArsip.trim() === '') return;
@@ -1270,7 +1271,11 @@
     function renderTabel() { renderTabelCustom(dataTransaksi); }
 
     function updateHeader() {
-        document.getElementById('title-instansi').innerText = `${document.getElementById('input-instansi').value} — Periode ${document.getElementById('input-periode').value}`;
+        const instansi = document.getElementById('input-instansi').value.trim();
+        const periode = document.getElementById('input-periode').value.trim();
+        const teksHeader = [instansi, periode ? `Periode ${periode}` : ''].filter(Boolean).join(' — ');
+
+        document.getElementById('title-instansi').innerText = teksHeader;
         document.getElementById('lbl-bendahara').innerText = document.getElementById('input-bendahara').value;
         document.getElementById('lbl-nip-bendahara').innerText = document.getElementById('input-nip-bendahara').value;
         document.getElementById('lbl-pa').innerText = document.getElementById('input-pa').value;
@@ -1282,6 +1287,7 @@
         if (savedUrl) {
             document.getElementById('input-script-url').value = savedUrl;
         }
+        updateHeader();
         resetFormTransaksi();
         renderTabel();
         muatDariGoogleSheets();
