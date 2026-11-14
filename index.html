@@ -412,7 +412,7 @@
             <div class="form-grid" style="margin-top: 12px; align-items: end;">
                 <div class="form-group" style="grid-column: span 3;">
                     <label>URL Web App</label>
-                    <input type="text" id="input-script-url" placeholder="https://script.google.com/macros/s/...../exec" oninput="simpanUrlScriptLokal()">
+                    <input type="password" id="input-script-url" placeholder="https://script.google.com/macros/s/...../exec" oninput="simpanUrlScriptLokal()">
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <button type="button" class="btn" style="flex: 1;" onclick="simpanUrlScriptLokal(true); muatDariGoogleSheets();">🔗 Hubungkan</button>
@@ -466,6 +466,10 @@
 
 <script>
     const STORAGE_KEY_URL = "bku_google_script_url_v1";
+    
+    // Konfigurasi URL Deployment & Kunci Rahasia API (Tersembunyi)
+    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYXmJNF760J7JBE_Iw95M3ghCBN3NSQCDhhvOAvjU8wIGVRMcVuHNT232BFl0_6Ds/exec";
+    const API_SECRET_KEY = "RAHASIA_DPA_2026";
 
     let masterDPA = [];
     let arsipDPA = {};
@@ -480,7 +484,7 @@
     function getGoogleScriptUrl() {
         const inputEl = document.getElementById('input-script-url');
         const val = inputEl ? inputEl.value.trim() : '';
-        return val || localStorage.getItem(STORAGE_KEY_URL) || '';
+        return val || localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_SCRIPT_URL;
     }
 
     function simpanUrlScriptLokal(tampilkanNotif = false) {
@@ -580,12 +584,18 @@
         const scriptUrl = getGoogleScriptUrl();
         if (!scriptUrl || !scriptUrl.startsWith('https://')) return;
 
+        // Menyisipkan API_SECRET_KEY ke dalam setiap payload POST
+        const securePayload = {
+            key: API_SECRET_KEY,
+            ...bodyObj
+        };
+
         setCloudStatus('⏳ Menyinkronkan...', '#fefcbf', '#744210');
         try {
             const res = await fetch(scriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(bodyObj)
+                body: JSON.stringify(securePayload)
             });
             const result = await res.json();
             if (result.status === 'success') {
@@ -621,7 +631,15 @@
 
         setCloudStatus('⏳ Memuat...', '#fefcbf', '#744210');
         try {
-            const res = await fetch(`${scriptUrl}?action=loadAll`);
+            // Menggunakan metode POST dengan API_SECRET_KEY agar tidak bisa diakses langsung dari browser
+            const res = await fetch(scriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    key: API_SECRET_KEY,
+                    action: 'loadAll'
+                })
+            });
             const data = await res.json();
             if (data.status !== 'success') throw new Error(data.message);
 
@@ -1272,7 +1290,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
+        const savedUrl = localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_SCRIPT_URL;
         if (savedUrl) {
             document.getElementById('input-script-url').value = savedUrl;
         }
