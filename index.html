@@ -150,20 +150,27 @@
             font-weight: 600;
         }
 
-        h2 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
+      h2 {
+         text-align: left;
+         color: var(--primary-color);
+         margin-bottom: 5px;
+         text-transform: uppercase;
+     }
 
-        .subtitle {
-            text-align: center;
-            color: #718096;
-            margin-bottom: 25px;
-            font-size: 14px;
-            min-height: 20px;
-        }
+     .subtitle {
+         text-align: left;
+         color: #718096;
+         margin-bottom: 25px;
+         font-size: 14px;
+         min-height: 20px;
+     }
+
+.subtitle:empty {
+         min-height: 0;
+         margin-bottom: 15px;
+     }
+
+
 
         .print-only-bku-header {
             display: none;
@@ -378,6 +385,10 @@
             table { font-size: 10px; }
 
             body:not(.printing-dpa) #page-bku { display: block !important; }
+            body:not(.printing-dpa) #page-bku h2 {
+                text-align: center !important;
+                margin-bottom: 4px !important;
+            }
             body:not(.printing-dpa) #page-dpa,
             body:not(.printing-dpa) #page-pengaturan,
             body:not(.printing-dpa) #print-area-dpa { display: none !important; }
@@ -469,10 +480,11 @@
         </div>
     </div>
 
-    <!-- ==================== HALAMAN 1: BKU UTAMA ==================== -->
+ <!-- ==================== HALAMAN 1: BKU UTAMA ==================== -->
     <div id="page-bku">
-        <h2>Buku Kas Umum (BKU)</h2>
-        <div class="subtitle" id="title-instansi"></div>
+        <h2 style="margin-bottom: 20px;">Buku Kas Umum (BKU)</h2>
+        <div class="subtitle" id="title-instansi" style="display: none;"></div>
+
 
         <!-- Header Khusus Tampilan Print BKU -->
         <div class="print-only-bku-header" id="bku-print-header">
@@ -598,10 +610,15 @@
         </div>
     </div>
 
-    <!-- ==================== HALAMAN 2: RAB ==================== -->
+  
+
+<!-- ==================== HALAMAN 2: RAB ==================== -->
     <div id="page-dpa" style="display: none;">
-        <h2>Rencana Anggaran Biaya (RAB)</h2>
-        <div class="subtitle"></div>
+        <h2 style="margin-bottom: 20px;">Rencana Anggaran Biaya (RAB)</h2>
+        <div class="subtitle" style="display: none;"></div>
+
+
+
 
         <!-- Unggah Excel RAB -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
@@ -692,6 +709,7 @@
     <div id="page-pengaturan" style="display: none;">
         <h2>Pengaturan</h2>
         <div class="subtitle"></div>
+
 
         <!-- Pengaturan Koneksi Database Google Sheets -->
         <div class="form-section" style="background: #ebf8ff; border-left: 4px solid #3182ce;">
