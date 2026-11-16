@@ -391,7 +391,7 @@
         <!-- Panel Daftar Arsip BKU -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <strong>📦 Daftar Arsip BKU Tersimpan:</strong>
+                <strong>📦 Arsip BKU:</strong>
                 <button type="button" class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="muatDariGoogleSheets()">🔄 Refresh Data dari Google Sheet</button>
             </div>
             <div id="container-tabel-arsip-bku" style="font-size: 12px; margin-top: 8px;">
@@ -402,7 +402,7 @@
         <!-- Form Input / Edit Transaksi -->
         <div class="form-section no-print" id="form-container" style="border: 2px dashed var(--secondary-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <strong id="form-title">Tambah Transaksi Manual:</strong>
+                <strong id="form-title">Tambah Transaksi:</strong>
             </div>
             <input type="hidden" id="edit-index" value="-1">
             <div class="form-grid" style="margin-top: 10px;">
@@ -490,7 +490,7 @@
 
         <!-- Unggah Excel DPA -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
-            <strong>📁 Unggah Dokumen DPA (Excel):</strong>
+            <strong>📁 Unggah DPA (Excel):</strong>
             <div style="margin-top: 10px;">
                 <input type="file" id="file-dpa" accept=".xlsx, .xls" onchange="muatDPAExcel(event)" style="font-size: 13px; background: white; padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0;">
             </div>
@@ -498,7 +498,7 @@
 
         <!-- Form Input Manual DPA -->
         <div class="form-section no-print" style="border: 2px dashed var(--secondary-color);">
-            <strong id="form-dpa-title">✍️ Input Manual Rincian DPA:</strong>
+            <strong id="form-dpa-title">✍️ Input DPA:</strong>
             <input type="hidden" id="edit-dpa-index" value="-1">
             <div class="form-grid" style="margin-top: 10px;">
                 <div class="form-group">
@@ -553,7 +553,7 @@
 
         <!-- Manajemen Status Subkegiatan DPA -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
-            <strong>📦 Manajemen Status Subkegiatan DPA:</strong>
+            <strong>📦 Manajemen DPA:</strong>
             <div id="container-tabel-arsip-dpa" style="font-size: 12px; margin-top: 8px;">
                 <p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari DPA.</p>
             </div>
@@ -1402,7 +1402,7 @@
         document.getElementById('dpa-harga-satuan').value = '';
         document.getElementById('dpa-pagu').value = '0';
         document.getElementById('dpa-pagu-tampil').value = 'Rp 0';
-        document.getElementById('form-dpa-title').innerText = '✍️ Input Manual Rincian DPA:';
+        document.getElementById('form-dpa-title').innerText = '✍️ Input DPA:';
         document.getElementById('btn-simpan-dpa-manual').innerText = '+ Tambahkan Rincian DPA';
         document.getElementById('btn-batal-edit-dpa').style.display = 'none';
     }
@@ -2145,7 +2145,7 @@
         document.getElementById('trx-jumlah').value = '';
         const now = new Date();
         document.getElementById('trx-tanggal').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        document.getElementById('form-title').innerText = 'Tambah Transaksi Manual:';
+        document.getElementById('form-title').innerText = 'Tambah Transaksi:';
         document.getElementById('btn-simpan-trx').innerText = '+ Tambahkan Baris ke BKU';
         document.getElementById('btn-batal-edit').style.display = 'none';
     }
