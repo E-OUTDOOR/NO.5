@@ -158,6 +158,10 @@
             min-height: 20px;
         }
 
+        .print-only-bku-header {
+            display: none;
+        }
+
         .form-section, .action-buttons {
             margin-bottom: 20px;
             padding: 15px;
@@ -306,6 +310,36 @@
             body:not(.printing-dpa) #page-pengaturan,
             body:not(.printing-dpa) #print-area-dpa { display: none !important; }
 
+            body:not(.printing-dpa) #title-instansi {
+                display: none !important;
+            }
+            body:not(.printing-dpa) .print-only-bku-header {
+                display: block !important;
+                margin-bottom: 14px;
+                color: #000;
+            }
+            body:not(.printing-dpa) .print-periode-center {
+                text-align: center;
+                font-size: 12px;
+                color: #2d3748;
+                margin-bottom: 14px;
+            }
+            body:not(.printing-dpa) .print-identitas-kiri {
+                text-align: left;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            body:not(.printing-dpa) .print-nama-dinas {
+                font-weight: 700;
+                font-size: 13px;
+                text-transform: uppercase;
+            }
+            body:not(.printing-dpa) .print-subkeg-info {
+                font-weight: 600;
+                font-size: 12px;
+                margin-top: 2px;
+            }
+
             body.printing-dpa #page-bku,
             body.printing-dpa #page-dpa,
             body.printing-dpa #page-pengaturan { display: none !important; }
@@ -352,7 +386,7 @@
     <!-- Navigasi Tab Halaman + Status Koneksi Google Sheets -->
     <div class="nav-tabs no-print">
         <button type="button" class="nav-btn active" id="tab-bku" onclick="bukaHalaman('bku')">📘 BKU</button>
-        <button type="button" class="nav-btn" id="tab-dpa" onclick="bukaHalaman('dpa')">📁 DPA</button>
+        <button type="button" class="nav-btn" id="tab-dpa" onclick="bukaHalaman('dpa')">📁 RAB</button>
         <button type="button" class="nav-btn" id="tab-pengaturan" onclick="bukaHalaman('pengaturan')">⚙️ Pengaturan</button>
 
         <div class="sync-bar">
@@ -368,13 +402,22 @@
         <h2>Buku Kas Umum (BKU)</h2>
         <div class="subtitle" id="title-instansi"></div>
 
+        <!-- Header Khusus Tampilan Print BKU -->
+        <div class="print-only-bku-header" id="bku-print-header">
+            <div class="print-periode-center" id="print-bku-periode"></div>
+            <div class="print-identitas-kiri">
+                <div class="print-nama-dinas" id="print-bku-instansi"></div>
+                <div class="print-subkeg-info" id="print-bku-subkegiatan"></div>
+            </div>
+        </div>
+
         <!-- Generator Per Subkegiatan -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
             <div class="form-grid" style="align-items: end;">
                 <div class="form-group" style="grid-column: span 3;">
-                    <label>Pilih Subkegiatan DPA:</label>
+                    <label>Pilih Subkegiatan RAB:</label>
                     <select id="select-target-subkegiatan" onchange="cekStatusPilihanSubkegiatan()">
-                        <option value="">-- Unggah file DPA atau Muat dari Cloud terlebih dahulu --</option>
+                        <option value="">-- Unggah file RAB atau Muat dari Cloud terlebih dahulu --</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 6px; align-items: center;">
@@ -458,7 +501,7 @@
                 </thead>
                 <tbody id="bku-body">
                     <tr>
-                        <td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan DPA lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td>
+                        <td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan RAB lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td>
                     </tr>
                 </tbody>
             </table>
@@ -483,22 +526,22 @@
         </div>
     </div>
 
-    <!-- ==================== HALAMAN 2: DPA ==================== -->
+    <!-- ==================== HALAMAN 2: RAB ==================== -->
     <div id="page-dpa" style="display: none;">
-        <h2>Dokumen Pelaksanaan Anggaran (DPA)</h2>
+        <h2>Rencana Anggaran Biaya (RAB)</h2>
         <div class="subtitle"></div>
 
-        <!-- Unggah Excel DPA -->
+        <!-- Unggah Excel RAB -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
-            <strong>📁 Unggah DPA (Excel):</strong>
+            <strong>📁 Unggah RAB (Excel):</strong>
             <div style="margin-top: 10px;">
                 <input type="file" id="file-dpa" accept=".xlsx, .xls" onchange="muatDPAExcel(event)" style="font-size: 13px; background: white; padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0;">
             </div>
         </div>
 
-        <!-- Form Input Manual DPA -->
+        <!-- Form Input Manual RAB -->
         <div class="form-section no-print" style="border: 2px dashed var(--secondary-color);">
-            <strong id="form-dpa-title">✍️ Input DPA:</strong>
+            <strong id="form-dpa-title">✍️ Input RAB:</strong>
             <input type="hidden" id="edit-dpa-index" value="-1">
             <div class="form-grid" style="margin-top: 10px;">
                 <div class="form-group">
@@ -546,23 +589,23 @@
                 </div>
             </div>
             <div style="margin-top: 10px; display: flex; gap: 10px;">
-                <button type="button" class="btn btn-success" id="btn-simpan-dpa-manual" onclick="simpanItemDPAManual()">+ Tambahkan Rincian DPA</button>
+                <button type="button" class="btn btn-success" id="btn-simpan-dpa-manual" onclick="simpanItemDPAManual()">+ Tambahkan Rincian RAB</button>
                 <button type="button" class="btn" id="btn-batal-edit-dpa" onclick="resetFormDPAManual()" style="background-color: #718096; display: none;">Batal Edit</button>
             </div>
         </div>
 
-        <!-- Manajemen Status Subkegiatan DPA -->
+        <!-- Manajemen Status Subkegiatan RAB -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
-            <strong>📦 Manajemen DPA:</strong>
+            <strong>📦 Manajemen RAB:</strong>
             <div id="container-tabel-arsip-dpa" style="font-size: 12px; margin-top: 8px;">
-                <p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari DPA.</p>
+                <p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari RAB.</p>
             </div>
         </div>
 
-        <!-- Tabel Rincian Item DPA -->
+        <!-- Tabel Rincian Item RAB -->
         <div class="form-section no-print" style="background: #f7fafc; border: 1px solid #cbd5e0;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <strong>📋 Daftar Rincian Item DPA:</strong>
+                <strong>📋 Daftar Rincian Item RAB:</strong>
                 <select id="filter-subkeg-rincian-dpa" onchange="renderTabelRincianDPA()" style="padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 12px; max-width: 450px;">
                     <option value="">-- Pilih Subkegiatan --</option>
                 </select>
@@ -993,7 +1036,7 @@
 
     function simpanDPAKeSheets() {
         jadwalSyncCepat(() => {
-            kirimKeAppsScript({ action: 'syncDPA', dpa: buildDPAPayload() }, '🟢 DPA Tersinkron');
+            kirimKeAppsScript({ action: 'syncDPA', dpa: buildDPAPayload() }, '🟢 RAB Tersinkron');
         });
     }
 
@@ -1239,7 +1282,7 @@
         const selectSubkeg = document.getElementById('select-target-subkegiatan');
         const selectedVal = selectSubkeg.value;
         const uniqueSubkegs = [...new Set(masterDPA.map(item => item.subkegiatan))];
-        const opts = ['<option value="">-- Pilih 1 Subkegiatan DPA --</option>'];
+        const opts = ['<option value="">-- Pilih 1 Subkegiatan RAB --</option>'];
         for (let i = 0; i < uniqueSubkegs.length; i++) {
             const subkeg = uniqueSubkegs[i];
             const esc = subkeg.replace(/"/g, '&quot;');
@@ -1388,8 +1431,8 @@
         document.getElementById('dpa-harga-satuan').value = komponen.hargaSatuan;
         hitungPaguOtomatisDPA();
 
-        document.getElementById('form-dpa-title').innerText = `✏️ Edit Rincian DPA (Baris #${index + 1}):`;
-        document.getElementById('btn-simpan-dpa-manual').innerText = '💾 Perbarui Rincian DPA';
+        document.getElementById('form-dpa-title').innerText = `✏️ Edit Rincian RAB (Baris #${index + 1}):`;
+        document.getElementById('btn-simpan-dpa-manual').innerText = '💾 Perbarui Rincian RAB';
         document.getElementById('btn-batal-edit-dpa').style.display = 'inline-block';
         document.getElementById('form-dpa-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -1402,8 +1445,8 @@
         document.getElementById('dpa-harga-satuan').value = '';
         document.getElementById('dpa-pagu').value = '0';
         document.getElementById('dpa-pagu-tampil').value = 'Rp 0';
-        document.getElementById('form-dpa-title').innerText = '✍️ Input DPA:';
-        document.getElementById('btn-simpan-dpa-manual').innerText = '+ Tambahkan Rincian DPA';
+        document.getElementById('form-dpa-title').innerText = '✍️ Input RAB:';
+        document.getElementById('btn-simpan-dpa-manual').innerText = '+ Tambahkan Rincian RAB';
         document.getElementById('btn-batal-edit-dpa').style.display = 'none';
     }
 
@@ -1419,7 +1462,7 @@
             return;
         }
 
-        if (!confirm(`Hapus rincian "${item.uraian}" dari DPA?`)) return;
+        if (!confirm(`Hapus rincian "${item.uraian}" dari RAB?`)) return;
 
         masterDPA.splice(index, 1);
 
@@ -1458,7 +1501,7 @@
         }
 
         if (daftarTerfilter.length === 0) {
-            container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada rincian DPA untuk subkegiatan ini.</p>';
+            container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada rincian RAB untuk subkegiatan ini.</p>';
             return;
         }
 
@@ -1557,9 +1600,71 @@
         });
     }
 
+    function perbaruiHeaderCetakBKU(dataSet = dataTransaksi, judulOpsional = '') {
+        const instansi = document.getElementById('input-instansi').value.trim();
+        const periode = document.getElementById('input-periode').value.trim();
+
+        const elPeriode = document.getElementById('print-bku-periode');
+        const elInstansi = document.getElementById('print-bku-instansi');
+        const elSubkeg = document.getElementById('print-bku-subkegiatan');
+
+        if (elPeriode) elPeriode.innerText = periode ? `Periode ${periode}` : '';
+        if (elInstansi) elInstansi.innerText = instansi;
+
+        let kodeSub = '';
+        if (Array.isArray(dataSet)) {
+            for (let i = 0; i < dataSet.length; i++) {
+                const rek = dataSet[i].rekening;
+                if (typeof rek === 'object' && rek !== null && rek.subkeg && rek.subkeg !== '-') {
+                    kodeSub = rek.subkeg;
+                    break;
+                }
+            }
+        }
+
+        let namaSub = String(judulOpsional || '').trim();
+        if (!namaSub) {
+            if (arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex]) {
+                namaSub = arsipBKU[arsipBkuAktifIndex].judul;
+            } else if (subkegiatanAktifTerakhir) {
+                namaSub = subkegiatanAktifTerakhir;
+            } else {
+                const selectedSubkeg = document.getElementById('select-target-subkegiatan')?.value || '';
+                if (selectedSubkeg) namaSub = selectedSubkeg;
+            }
+        }
+
+        if (namaSub) {
+            const hasilPisah = pisahKodeDanNamaSubkegiatan(namaSub, kodeSub);
+            if (!kodeSub && hasilPisah.kodeSubkeg !== '-') kodeSub = hasilPisah.kodeSubkeg;
+            namaSub = hasilPisah.namaSubkeg;
+        }
+
+        if (!kodeSub && namaSub) {
+            const cocokDPA = masterDPA.find(item => normalisasiNamaArsip(item.subkegiatan) === normalisasiNamaArsip(namaSub));
+            if (cocokDPA && cocokDPA.kodeSubkeg && cocokDPA.kodeSubkeg !== '-') {
+                kodeSub = cocokDPA.kodeSubkeg;
+            }
+        }
+
+        if (!namaSub && kodeSub) {
+            const cocokDPA = masterDPA.find(item => String(item.kodeSubkeg || '').trim() === kodeSub);
+            if (cocokDPA && cocokDPA.subkegiatan) {
+                namaSub = cocokDPA.subkegiatan;
+            }
+        }
+
+        const teksSubkeg = [kodeSub, namaSub].filter(Boolean).join(' - ');
+        if (elSubkeg) {
+            elSubkeg.innerText = teksSubkeg;
+            elSubkeg.style.display = teksSubkeg ? 'block' : 'none';
+        }
+    }
+
     function cetakBKUTerurut() {
         document.body.classList.remove('printing-dpa');
         dataTransaksi = urutkanTransaksiTglDanUraian(dataTransaksi);
+        perbaruiHeaderCetakBKU(dataTransaksi);
         resetFormTransaksi();
         renderTabel();
         setTimeout(() => window.print(), 100);
@@ -1795,6 +1900,7 @@
         if (!itemArsip) return;
         document.body.classList.remove('printing-dpa');
         itemArsip.transaksi = urutkanTransaksiTglDanUraian(itemArsip.transaksi);
+        perbaruiHeaderCetakBKU(itemArsip.transaksi, itemArsip.judul);
         renderTabelCustom(itemArsip.transaksi, itemArsip.terkunci === true);
         setTimeout(() => { window.print(); renderTabel(); }, 100);
     }
@@ -1870,7 +1976,7 @@
         container.innerHTML = `<table style="background:white;"><thead><tr><th style="width:4%;">No</th><th style="width:33%;">Nama / Keterangan Arsip BKU</th><th style="width:14%;">Waktu Simpan</th><th style="width:14%;">Total Pengeluaran</th><th style="width:11%;">Status</th><th style="width:24%;">Aksi</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
 
-    // ==================== MANAJEMEN STATUS SUBKEGIATAN DPA (BERDIRI SENDIRI) ====================
+    // ==================== MANAJEMEN STATUS SUBKEGIATAN RAB (BERDIRI SENDIRI) ====================
 
     function toggleArsipDPAStatusByIndex(index) {
         const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
@@ -1937,7 +2043,7 @@
 
         document.getElementById('print-area-dpa').innerHTML = `
             <div style="text-align:center;margin-bottom:12px;">
-                <h3 style="margin:0;">DOKUMEN PELAKSANAAN ANGGARAN (DPA)</h3>
+                <h3 style="margin:0;">RENCANA ANGGARAN BIAYA (RAB)</h3>
                 <div style="font-size:12px;font-weight:bold;">${instansi}</div>
             </div>
             <table style="width:100%;margin-bottom:10px;font-size:11px;">
@@ -1967,7 +2073,7 @@
         const target = daftarUnik[index];
         if (!target) return;
 
-        const newNameRaw = prompt("Ubah nama subkegiatan DPA (Hanya Nama):", target.namaSubkeg);
+        const newNameRaw = prompt("Ubah nama subkegiatan RAB (Hanya Nama):", target.namaSubkeg);
         if (newNameRaw && newNameRaw.trim()) {
             const hasilPisah = pisahKodeDanNamaSubkegiatan(newNameRaw, target.kodeSubkeg);
             const cleanNama = hasilPisah.namaSubkeg;
@@ -2001,7 +2107,7 @@
             return;
         }
 
-        if (!confirm(`Hapus subkegiatan "${target.kodeSubkeg} - ${target.namaSubkeg}" dari DPA dan Google Sheet DPA?`)) return;
+        if (!confirm(`Hapus subkegiatan "${target.kodeSubkeg} - ${target.namaSubkeg}" dari RAB dan Google Sheet RAB?`)) return;
 
         masterDPA = masterDPA.filter(item => {
             const h = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
@@ -2021,7 +2127,7 @@
 
         const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
         if (daftarUnik.length === 0) {
-            container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari DPA.</p>';
+            container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari RAB.</p>';
             return;
         }
 
@@ -2038,7 +2144,7 @@
 
             rows.push(`<tr><td class="text-center">${idx + 1}</td><td class="text-center" style="font-family:monospace;font-weight:600;color:#1a365d;">${sub.kodeSubkeg}</td><td><b>${sub.namaSubkeg}</b></td><td class="text-center">${badge}</td><td class="text-center" style="white-space:nowrap;"><button type="button" class="btn btn-print" onclick="cetakArsipSubkegiatanByIndex(${idx})">🖨️ Cetak</button> <button type="button" class="btn ${isTerkunci ? 'btn-danger' : 'btn-archive'}" style="padding:3px 6px;font-size:10px;" onclick="toggleArsipDPAStatusByIndex(${idx})">${isTerkunci ? 'Buka' : 'Kunci'}</button> <button type="button" class="btn btn-warning" style="padding:3px 6px;font-size:10px;" onclick="editArsipSubkegiatan(${idx})">Edit</button> <button type="button" class="btn btn-danger" ${btnHapusAttr} onclick="hapusArsipSubkegiatan(${idx})">Hapus</button></td></tr>`);
         }
-        container.innerHTML = `<table style="background:white;"><thead><tr><th style="width:5%;">No</th><th style="width:15%;">Kode Subkegiatan</th><th style="width:35%;">Nama Subkegiatan DPA</th><th style="width:15%;">Status DPA</th><th style="width:30%;">Aksi</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+        container.innerHTML = `<table style="background:white;"><thead><tr><th style="width:5%;">No</th><th style="width:15%;">Kode Subkegiatan</th><th style="width:35%;">Nama Subkegiatan RAB</th><th style="width:15%;">Status RAB</th><th style="width:30%;">Aksi</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
 
     // ==================== BKU GENERATOR & TRANSAKSI ====================
@@ -2170,7 +2276,7 @@
         if (!tbody) return;
 
         if (!dataSet || dataSet.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan DPA lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan RAB lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td></tr>`;
             return;
         }
 
@@ -2247,6 +2353,8 @@
         document.getElementById('lbl-nip-bendahara').innerText = document.getElementById('input-nip-bendahara').value;
         document.getElementById('lbl-pa').innerText = document.getElementById('input-pa').value;
         document.getElementById('lbl-nip-pa').innerText = document.getElementById('input-nip-pa').value;
+
+        perbaruiHeaderCetakBKU();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
