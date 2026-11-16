@@ -21,6 +21,72 @@
             color: #2d3748;
         }
 
+        /* Halaman Kode Akses */
+        #auth-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 36px 32px;
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .auth-card h1 {
+            margin: 0 0 6px 0;
+            color: var(--primary-color);
+            font-size: 24px;
+            letter-spacing: 0.5px;
+        }
+
+        .auth-card p {
+            margin: 0 0 22px 0;
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: 700;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+            transition: border-color 0.15s;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        .auth-error {
+            color: #c53030;
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: none;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -28,6 +94,7 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
         }
 
         .nav-tabs {
@@ -64,6 +131,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .sync-status {
@@ -228,7 +296,8 @@
 
         @media print {
             body { background: white; padding: 0; margin: 0; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; }
+            #auth-screen { display: none !important; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; display: block !important; }
             .form-section, .action-buttons, .no-print, .nav-tabs { display: none !important; }
             table { font-size: 10px; }
 
@@ -264,7 +333,22 @@
 </head>
 <body>
 
-<div class="container">
+<!-- ==================== HALAMAN KODE AKSES ==================== -->
+<div id="auth-screen" class="no-print">
+    <div class="auth-card">
+        <div style="font-size: 38px; margin-bottom: 8px;">🔐</div>
+        <h1>e-OUDTOOR</h1>
+        <p></p>
+        <div id="auth-error-msg" class="auth-error">Kode akses salah. Silakan coba lagi.</div>
+        <form onsubmit="verifikasiKodeAkses(event)">
+            <input type="password" id="input-kode-akses" class="auth-input" placeholder="" autocomplete="off" autofocus required>
+            <button type="submit" class="btn" style="width: 100%; padding: 12px; font-size: 15px;">Masuk</button>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== APLIKASI UTAMA ==================== -->
+<div class="container" id="app-container">
     <!-- Navigasi Tab Halaman + Status Koneksi Google Sheets -->
     <div class="nav-tabs no-print">
         <button type="button" class="nav-btn active" id="tab-bku" onclick="bukaHalaman('bku')">📘 BKU</button>
@@ -275,6 +359,7 @@
             <span id="cloud-status" class="sync-status">⚪ Belum Terhubung</span>
             <button type="button" class="btn" style="padding: 7px 12px; font-size: 12px;" onclick="muatDariGoogleSheets()">⬇️ Muat Cloud</button>
             <button type="button" class="btn btn-success" style="padding: 7px 12px; font-size: 12px;" onclick="simpanSemuaKeGoogleSheets()">☁️ Simpan</button>
+            <button type="button" class="btn" style="padding: 7px 12px; font-size: 12px; background-color: #4a5568;" onclick="keluarSesiAkses()">🔒 Keluar</button>
         </div>
     </div>
 
@@ -426,7 +511,7 @@
                     <input type="text" id="dpa-kode-subkeg" placeholder="Cth: 2.01.01.2.01.01" onblur="bersihkanInputKodeSubkeg()">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label>Nama Subkegiatan : *</label>
+                    <label>Nama Subkegiatan: *</label>
                     <input type="text" id="dpa-subkegiatan" list="list-subkeg-dpa" placeholder="Pilih nama subkegiatan atau ketik nama saja..." oninput="sinkronOtomatisSubkegInput()">
                     <datalist id="list-subkeg-dpa"></datalist>
                 </div>
@@ -552,6 +637,9 @@
 </div>
 
 <script>
+    const KODE_AKSES_VALID = "123";
+    const SESSION_KEY_AUTH = "bku_auth_unlocked_v1";
+
     const STORAGE_KEY_URL = "bku_google_script_url_v1";
     const STORAGE_KEY_CACHE = "bku_fast_cache_v1";
     
@@ -568,10 +656,58 @@
     let syncTimer = null;
     let abortLoadController = null;
     let dpaSudahDirender = false;
+    let aplikasiSudahDiinisialisasi = false;
 
     const fmtRupiah = new Intl.NumberFormat('id-ID');
     const fmtRupiahDes = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtDateLocal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jayapura', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    function tampilkanAplikasiUtama() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+
+        if (!aplikasiSudahDiinisialisasi) {
+            aplikasiSudahDiinisialisasi = true;
+            const savedUrl = localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_SCRIPT_URL;
+            if (savedUrl) {
+                document.getElementById('input-script-url').value = savedUrl;
+            }
+            updateHeader();
+            resetFormTransaksi();
+            renderTabel();
+
+            const adaCache = muatCacheLokalCepat();
+            muatDariGoogleSheets(adaCache);
+        }
+    }
+
+    function verifikasiKodeAkses(event) {
+        if (event) event.preventDefault();
+        const inputEl = document.getElementById('input-kode-akses');
+        const errorEl = document.getElementById('auth-error-msg');
+        const kode = inputEl.value.trim();
+
+        if (kode === KODE_AKSES_VALID) {
+            sessionStorage.setItem(SESSION_KEY_AUTH, "1");
+            errorEl.style.display = 'none';
+            inputEl.value = '';
+            tampilkanAplikasiUtama();
+        } else {
+            errorEl.style.display = 'block';
+            inputEl.value = '';
+            inputEl.focus();
+        }
+    }
+
+    function keluarSesiAkses() {
+        sessionStorage.removeItem(SESSION_KEY_AUTH);
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('auth-error-msg').style.display = 'none';
+        const inputEl = document.getElementById('input-kode-akses');
+        inputEl.value = '';
+        inputEl.focus();
+    }
 
     function simpanCacheLokalCepat() {
         try {
@@ -2114,17 +2250,11 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        const savedUrl = localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_SCRIPT_URL;
-        if (savedUrl) {
-            document.getElementById('input-script-url').value = savedUrl;
+        if (sessionStorage.getItem(SESSION_KEY_AUTH) === "1") {
+            tampilkanAplikasiUtama();
+        } else {
+            document.getElementById('input-kode-akses').focus();
         }
-        updateHeader();
-        resetFormTransaksi();
-        renderTabel();
-
-        // Tampilkan data instan dari cache lokal terlebih dahulu, lalu sinkronkan dari Google Sheets di latar belakang
-        const adaCache = muatCacheLokalCepat();
-        muatDariGoogleSheets(adaCache);
     });
 </script>
 
