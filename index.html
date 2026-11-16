@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>e-OUDTOOR</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
     <style>
         :root {
             --primary-color: #1a365d;
@@ -49,7 +49,7 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
-            transition: all 0.2s;
+            transition: background-color 0.12s, color 0.12s;
         }
 
         .nav-btn:hover { background-color: #e2e8f0; }
@@ -121,6 +121,12 @@
             box-sizing: border-box;
         }
 
+        .input-readonly-auto {
+            background-color: #e2e8f0;
+            font-weight: 700;
+            color: #1a365d;
+        }
+
         .btn {
             background-color: var(--secondary-color);
             color: white;
@@ -130,11 +136,11 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
-            transition: background 0.2s;
+            transition: background-color 0.12s;
         }
 
         .btn:hover { background-color: var(--primary-color); }
-        .btn:disabled { cursor: not-allowed; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.45; }
         .btn-success { background-color: #38a169; }
         .btn-success:hover { background-color: #2f855a; }
         .btn-auto { background-color: #d69e2e; }
@@ -286,17 +292,23 @@
                         <option value="">-- Unggah file DPA atau Muat dari Cloud terlebih dahulu --</option>
                     </select>
                 </div>
-                <div style="display: flex; gap: 6px;">
+                <div style="display: flex; gap: 6px; align-items: center;">
                     <button type="button" class="btn btn-auto" id="btn-eksekusi" style="flex: 1;" onclick="autoGeneratePerSubkegiatanPilihan()">🤖 EKSEKUSI</button>
-                    <button type="button" class="btn btn-archive" id="btn-arsipkan-bku" style="flex: 1;" onclick="simpanKeArsipBKU()">🔒 ARSIPKAN BKU</button>
+                    <button type="button" class="btn btn-archive" id="btn-arsipkan-bku" style="flex: 1;" onclick="simpanKeArsipBKU()">📦 ARSIPKAN</button>
                 </div>
+            </div>
+            <div style="margin-top: 6px;">
+                <span id="badge-kunci-eksekusi-bku" style="display: none; background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">TERKUNCI</span>
             </div>
             <div id="status-arsip-info" style="display: none;"></div>
         </div>
 
         <!-- Panel Daftar Arsip BKU -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
-            <strong>📦 Daftar Arsip BKU Tersimpan:</strong>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <strong>📦 Daftar Arsip BKU Tersimpan:</strong>
+                <button type="button" class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="muatDariGoogleSheets()">🔄 Refresh Data dari Google Sheet</button>
+            </div>
             <div id="container-tabel-arsip-bku" style="font-size: 12px; margin-top: 8px;">
                 <p style="color: #718096; font-style: italic;">Belum ada arsip BKU yang disimpan.</p>
             </div>
@@ -304,7 +316,9 @@
 
         <!-- Form Input / Edit Transaksi -->
         <div class="form-section no-print" id="form-container" style="border: 2px dashed var(--secondary-color);">
-            <strong id="form-title">Tambah Transaksi Manual:</strong>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <strong id="form-title">Tambah Transaksi Manual:</strong>
+            </div>
             <input type="hidden" id="edit-index" value="-1">
             <div class="form-grid" style="margin-top: 10px;">
                 <div class="form-group">
@@ -357,7 +371,11 @@
                         <th style="width: 7%;" class="no-print">Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="bku-body"></tbody>
+                <tbody id="bku-body">
+                    <tr>
+                        <td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan DPA lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
 
@@ -385,6 +403,7 @@
         <h2>Dokumen Pelaksanaan Anggaran (DPA)</h2>
         <div class="subtitle"></div>
 
+        <!-- Unggah Excel DPA -->
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
             <strong>📁 Unggah Dokumen DPA (Excel):</strong>
             <div style="margin-top: 10px;">
@@ -392,11 +411,79 @@
             </div>
         </div>
 
+        <!-- Form Input Manual DPA -->
+        <div class="form-section no-print" style="border: 2px dashed var(--secondary-color);">
+            <strong id="form-dpa-title">✍️ Input Manual Rincian DPA:</strong>
+            <input type="hidden" id="edit-dpa-index" value="-1">
+            <div class="form-grid" style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Nama Kegiatan:</label>
+                    <input type="text" id="dpa-kegiatan" list="list-kegiatan-dpa" placeholder="Opsional / Nama Kegiatan">
+                    <datalist id="list-kegiatan-dpa"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Kode Subkegiatan (Hanya Kode):</label>
+                    <input type="text" id="dpa-kode-subkeg" placeholder="Cth: 2.01.01.2.01.01" onblur="bersihkanInputKodeSubkeg()">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Nama Subkegiatan (Hanya Nama): *</label>
+                    <input type="text" id="dpa-subkegiatan" list="list-subkeg-dpa" placeholder="Pilih nama subkegiatan atau ketik nama saja..." oninput="sinkronOtomatisSubkegInput()">
+                    <datalist id="list-subkeg-dpa"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Kode Rekening:</label>
+                    <input type="text" id="dpa-rekening" placeholder="Cth: 5.1.02.01.01.0024">
+                </div>
+                <div class="form-group">
+                    <label>Nama Rekening:</label>
+                    <input type="text" id="dpa-nama-rekening" placeholder="Cth: Belanja Alat/Bahan untuk Kegiatan Kantor">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Uraian Rincian Belanja: *</label>
+                    <input type="text" id="dpa-uraian" placeholder="Cth: Kertas HVS F4 70 Gram">
+                </div>
+                <div class="form-group">
+                    <label>Volume: *</label>
+                    <input type="number" id="dpa-volume-angka" step="any" min="0" placeholder="Cth: 10" oninput="hitungPaguOtomatisDPA()">
+                </div>
+                <div class="form-group">
+                    <label>Satuan:</label>
+                    <input type="text" id="dpa-satuan" placeholder="Cth: Rim / Orang / Paket">
+                </div>
+                <div class="form-group">
+                    <label>Harga Satuan (Rp): *</label>
+                    <input type="number" id="dpa-harga-satuan" step="any" min="0" placeholder="0" oninput="hitungPaguOtomatisDPA()">
+                </div>
+                <div class="form-group">
+                    <label>Pagu Anggaran (Otomatis):</label>
+                    <input type="text" id="dpa-pagu-tampil" class="input-readonly-auto" value="Rp 0" readonly>
+                    <input type="hidden" id="dpa-pagu" value="0">
+                </div>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <button type="button" class="btn btn-success" id="btn-simpan-dpa-manual" onclick="simpanItemDPAManual()">+ Tambahkan Rincian DPA</button>
+                <button type="button" class="btn" id="btn-batal-edit-dpa" onclick="resetFormDPAManual()" style="background-color: #718096; display: none;">Batal Edit</button>
+            </div>
+        </div>
+
+        <!-- Manajemen Status Subkegiatan DPA -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
             <strong>📦 Manajemen Status Subkegiatan DPA:</strong>
-            <div style="font-size: 11px; color: #744210; margin-top: 4px;"></div>
             <div id="container-tabel-arsip-dpa" style="font-size: 12px; margin-top: 8px;">
                 <p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari DPA.</p>
+            </div>
+        </div>
+
+        <!-- Tabel Rincian Item DPA -->
+        <div class="form-section no-print" style="background: #f7fafc; border: 1px solid #cbd5e0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <strong>📋 Daftar Rincian Item DPA:</strong>
+                <select id="filter-subkeg-rincian-dpa" onchange="renderTabelRincianDPA()" style="padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 12px; max-width: 450px;">
+                    <option value="">-- Pilih Subkegiatan --</option>
+                </select>
+            </div>
+            <div id="container-tabel-rincian-dpa" class="table-responsive" style="margin-top: 10px;">
+                <p style="color: #718096; font-style: italic;">Silakan pilih subkegiatan terlebih dahulu untuk menampilkan rincian.</p>
             </div>
         </div>
     </div>
@@ -466,8 +553,8 @@
 
 <script>
     const STORAGE_KEY_URL = "bku_google_script_url_v1";
+    const STORAGE_KEY_CACHE = "bku_fast_cache_v1";
     
-    // Konfigurasi URL Deployment & Kunci Rahasia API (Tersembunyi)
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYXmJNF760J7JBE_Iw95M3ghCBN3NSQCDhhvOAvjU8wIGVRMcVuHNT232BFl0_6Ds/exec";
     const API_SECRET_KEY = "RAHASIA_DPA_2026";
 
@@ -476,10 +563,144 @@
     let arsipBKU = [];
     let arsipBkuAktifIndex = -1;
     let subkegiatanAktifTerakhir = '';
+    let dataTransaksi = [];
 
-    let dataTransaksi = [
-        { tanggal: '2026-11-01', noBukti: '000/AWAL', rekening: '-', uraian: 'Saldo Awal Kas', jenis: 'masuk', jumlah: 50000000 }
-    ];
+    let syncTimer = null;
+    let abortLoadController = null;
+    let dpaSudahDirender = false;
+
+    const fmtRupiah = new Intl.NumberFormat('id-ID');
+    const fmtRupiahDes = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtDateLocal = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jayapura', year: 'numeric', month: '2-digit', day: '2-digit' });
+
+    function simpanCacheLokalCepat() {
+        try {
+            const payloadCache = {
+                pengaturan: {
+                    instansi: document.getElementById('input-instansi').value,
+                    periode: document.getElementById('input-periode').value,
+                    pa: document.getElementById('input-pa').value,
+                    nipPa: document.getElementById('input-nip-pa').value,
+                    bendahara: document.getElementById('input-bendahara').value,
+                    nipBendahara: document.getElementById('input-nip-bendahara').value
+                },
+                masterDPA,
+                arsipDPA,
+                arsipBKU
+            };
+            localStorage.setItem(STORAGE_KEY_CACHE, JSON.stringify(payloadCache));
+        } catch (e) {}
+    }
+
+    function muatCacheLokalCepat() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_CACHE);
+            if (!raw) return false;
+            const c = JSON.parse(raw);
+            if (c.pengaturan) {
+                document.getElementById('input-instansi').value = c.pengaturan.instansi || '';
+                document.getElementById('input-periode').value = c.pengaturan.periode || '';
+                document.getElementById('input-pa').value = c.pengaturan.pa || '';
+                document.getElementById('input-nip-pa').value = c.pengaturan.nipPa || '';
+                document.getElementById('input-bendahara').value = c.pengaturan.bendahara || '';
+                document.getElementById('input-nip-bendahara').value = c.pengaturan.nipBendahara || '';
+                updateHeader();
+            }
+            if (Array.isArray(c.masterDPA)) masterDPA = c.masterDPA;
+            if (c.arsipDPA && typeof c.arsipDPA === 'object') arsipDPA = c.arsipDPA;
+            if (Array.isArray(c.arsipBKU)) arsipBKU = c.arsipBKU;
+
+            perbaruiDropdownSubkegiatan();
+            cekStatusPilihanSubkegiatan();
+            renderTabelArsipBKU();
+            perbaruiStatusKunciFormBKU();
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function pisahKodeDanNamaSubkegiatan(teksSubkeg, kodeManual = '') {
+        const rawTeks = String(teksSubkeg || '').replace(/\s+/g, ' ').trim();
+        const rawKode = String(kodeManual || '').replace(/\s+/g, ' ').trim();
+
+        const polaKode = /([1-9]\.\d{2}\.\d{2}\.\d\.\d{2}\.\d{2,4})/;
+        const matchKodeManual = rawKode.match(polaKode);
+        const matchKodeTeks = rawTeks.match(polaKode);
+
+        let kodeBersih = '-';
+        if (matchKodeManual) {
+            kodeBersih = matchKodeManual[1];
+        } else if (matchKodeTeks) {
+            kodeBersih = matchKodeTeks[1];
+        } else if (rawKode && rawKode !== '-') {
+            const tokenKode = rawKode.match(/^[0-9.]+/);
+            kodeBersih = tokenKode ? tokenKode[0] : rawKode;
+        }
+
+        let namaBersih = rawTeks
+            .replace(/^\s*[1-9]\.\d{2}\.\d{2}\.\d\.\d{2}\.\d{2,4}\s*[-–—:.]?\s*/i, '')
+            .replace(/\s*\(?\s*[1-9]\.\d{2}\.\d{2}\.\d\.\d{2}\.\d{2,4}\s*\)?\s*$/i, '')
+            .trim();
+
+        if (!namaBersih && rawTeks && !polaKode.test(rawTeks)) {
+            namaBersih = rawTeks;
+        }
+
+        return {
+            kodeSubkeg: kodeBersih,
+            namaSubkeg: namaBersih || rawTeks
+        };
+    }
+
+    function ambilDaftarSubkegiatanUnikDPA() {
+        const petaUnik = new Map();
+        for (let i = 0; i < masterDPA.length; i++) {
+            const item = masterDPA[i];
+            const hasilPisah = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+            const kunciUnik = `${hasilPisah.kodeSubkeg}|||${hasilPisah.namaSubkeg}`;
+            if (!petaUnik.has(kunciUnik)) {
+                petaUnik.set(kunciUnik, {
+                    kunciUnik,
+                    kodeSubkeg: hasilPisah.kodeSubkeg,
+                    namaSubkeg: hasilPisah.namaSubkeg,
+                    rawSubkeg: item.subkegiatan
+                });
+            }
+        }
+        return Array.from(petaUnik.values());
+    }
+
+    function isSubkegiatanTerkunciUnik(kunciUnik, fallbackNama = '') {
+        if (arsipDPA[kunciUnik] !== undefined) return arsipDPA[kunciUnik] === true;
+        if (fallbackNama && arsipDPA[fallbackNama] !== undefined) return arsipDPA[fallbackNama] === true;
+        return false;
+    }
+
+    function isArsipBKUAktifTerkunci() {
+        if (arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex]) {
+            return arsipBKU[arsipBkuAktifIndex].terkunci === true;
+        }
+        if (subkegiatanAktifTerakhir) {
+            const targetNorm = normalisasiNamaArsip(subkegiatanAktifTerakhir);
+            const found = arsipBKU.find(item => normalisasiNamaArsip(item.judul) === targetNorm);
+            if (found) return found.terkunci === true;
+        }
+        return false;
+    }
+
+    function perbaruiStatusKunciFormBKU() {
+        const terkunci = isArsipBKUAktifTerkunci();
+        const btnSimpanTrx = document.getElementById('btn-simpan-trx');
+        const btnArsipkanBku = document.getElementById('btn-arsipkan-bku');
+
+        if (btnSimpanTrx) btnSimpanTrx.disabled = terkunci;
+        if (btnArsipkanBku && terkunci) {
+            btnArsipkanBku.disabled = true;
+        } else {
+            cekStatusPilihanSubkegiatan();
+        }
+    }
 
     function getGoogleScriptUrl() {
         const inputEl = document.getElementById('input-script-url');
@@ -500,7 +721,7 @@
     function setCloudStatus(text, bg = '#edf2f7', color = '#2d3748') {
         const el = document.getElementById('cloud-status');
         if (el) {
-            el.innerText = text;
+            el.textContent = text;
             el.style.background = bg;
             el.style.color = color;
         }
@@ -510,17 +731,17 @@
         const teks = String(nilaiTgl || '').trim();
         if (!teks) return '';
         if (/^\d{4}-\d{2}-\d{2}$/.test(teks)) return teks;
-
         const dt = new Date(teks);
-        if (!isNaN(dt.getTime())) {
-            return new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'Asia/Jayapura',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).format(dt);
-        }
+        if (!isNaN(dt.getTime())) return fmtDateLocal.format(dt);
         return teks.split('T')[0];
+    }
+
+    function parseAngkaSheet(nilai) {
+        if (typeof nilai === 'number') return isNaN(nilai) ? 0 : nilai;
+        const teks = String(nilai || '').trim();
+        if (!teks || teks === '-') return 0;
+        const bersih = teks.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.');
+        return parseFloat(bersih) || 0;
     }
 
     function buildPengaturanPayload() {
@@ -535,35 +756,48 @@
     }
 
     function buildDPAPayload() {
-        return masterDPA.map((item, idx) => ({
-            ID: `DPA-${String(idx + 1).padStart(3, '0')}`,
-            Kegiatan: item.kegiatan,
-            Subkegiatan: item.subkegiatan,
-            Kode_Subkegiatan: item.kodeSubkeg,
-            Kode_Rekening: item.rekening,
-            Nama_Rekening: item.namaRekening,
-            Uraian: item.uraian,
-            Volume: item.volume,
-            Pagu: item.pagu,
-            Status_Kunci: arsipDPA[item.subkegiatan] ? 'TERKUNCI' : 'TERBUKA'
-        }));
+        return masterDPA.map((item, idx) => {
+            const hasilPisah = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+            const kunciUnik = `${hasilPisah.kodeSubkeg}|||${hasilPisah.namaSubkeg}`;
+            const terkunci = isSubkegiatanTerkunciUnik(kunciUnik, hasilPisah.namaSubkeg);
+            return {
+                ID: `DPA-${String(idx + 1).padStart(3, '0')}`,
+                Kegiatan: item.kegiatan,
+                Subkegiatan: hasilPisah.namaSubkeg,
+                Kode_Subkegiatan: hasilPisah.kodeSubkeg,
+                Kode_Rekening: item.rekening,
+                Nama_Rekening: item.namaRekening,
+                Uraian: item.uraian,
+                Volume: item.volume,
+                Pagu: item.pagu,
+                Status_Kunci: terkunci ? 'TERKUNCI' : 'TERBUKA'
+            };
+        });
     }
 
     function buildBKUPayload() {
-        return dataTransaksi.map((trx, idx) => {
-            const isObj = typeof trx.rekening === 'object' && trx.rekening !== null;
-            return {
-                ID: `TRX-${String(idx + 1).padStart(3, '0')}`,
-                Tanggal: normalisasiTanggalLokal(trx.tanggal),
-                No_Bukti: trx.noBukti,
-                Kode_Subkegiatan: isObj ? trx.rekening.subkeg : '-',
-                Kode_Rekening: isObj ? trx.rekening.rekening : (trx.rekening || '-'),
-                Uraian: trx.uraian,
-                Jenis: trx.jenis,
-                Jumlah: trx.jumlah,
-                Arsip_Judul: subkegiatanAktifTerakhir || 'AKTIF'
-            };
-        });
+        const semuaTransaksiArsip = [];
+        let counter = 1;
+        for (let i = 0; i < arsipBKU.length; i++) {
+            const arsip = arsipBKU[i];
+            const daftarTrx = Array.isArray(arsip.transaksi) ? arsip.transaksi : [];
+            for (let j = 0; j < daftarTrx.length; j++) {
+                const trx = daftarTrx[j];
+                const isObj = typeof trx.rekening === 'object' && trx.rekening !== null;
+                semuaTransaksiArsip.push({
+                    ID: `TRX-${String(counter++).padStart(3, '0')}`,
+                    Tanggal: normalisasiTanggalLokal(trx.tanggal),
+                    No_Bukti: trx.noBukti,
+                    Kode_Subkegiatan: isObj ? trx.rekening.subkeg : '-',
+                    Kode_Rekening: isObj ? trx.rekening.rekening : (trx.rekening || '-'),
+                    Uraian: trx.uraian,
+                    Jenis: trx.jenis,
+                    Jumlah: trx.jumlah,
+                    Arsip_Judul: arsip.judul || 'AKTIF'
+                });
+            }
+        }
+        return semuaTransaksiArsip;
     }
 
     function buildArsipBKUPayload() {
@@ -576,26 +810,26 @@
             Jumlah_Baris: a.jumlahBaris,
             Total_Belanja: a.totalBelanja,
             Saldo_Akhir: a.saldoAkhir,
-            Data_JSON: JSON.stringify(a.transaksi)
+            Status_Kunci: a.terkunci ? 'TERKUNCI' : 'TERBUKA',
+            Data_JSON: JSON.stringify({
+                terkunci: a.terkunci === true,
+                transaksi: a.transaksi || []
+            })
         }));
     }
 
-    async function kirimKeAppsScript(bodyObj, pesanSukses = '🟢 Tersimpan di Google Sheets', silent = true) {
+    async function kirimKeAppsScript(bodyObj, pesanSukses = '🟢 Tersimpan di Google Sheets') {
         const scriptUrl = getGoogleScriptUrl();
         if (!scriptUrl || !scriptUrl.startsWith('https://')) return;
 
-        // Menyisipkan API_SECRET_KEY ke dalam setiap payload POST
-        const securePayload = {
-            key: API_SECRET_KEY,
-            ...bodyObj
-        };
-
+        simpanCacheLokalCepat();
         setCloudStatus('⏳ Menyinkronkan...', '#fefcbf', '#744210');
+
         try {
             const res = await fetch(scriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(securePayload)
+                body: JSON.stringify({ key: API_SECRET_KEY, ...bodyObj })
             });
             const result = await res.json();
             if (result.status === 'success') {
@@ -609,35 +843,170 @@
         }
     }
 
-    async function simpanBKUKeSheets(silent = true) {
-        await kirimKeAppsScript({ action: 'syncBKU', bku: buildBKUPayload(), arsipBku: buildArsipBKUPayload() }, '🟢 BKU Tersinkron', silent);
+    function jadwalSyncCepat(fnSync, delay = 250) {
+        simpanCacheLokalCepat();
+        if (syncTimer) clearTimeout(syncTimer);
+        syncTimer = setTimeout(fnSync, delay);
     }
 
-    async function simpanDPAKeSheets(silent = true) {
-        await kirimKeAppsScript({ action: 'syncDPA', dpa: buildDPAPayload() }, '🟢 DPA Tersinkron', silent);
+    function simpanBKUKeSheets() {
+        jadwalSyncCepat(() => {
+            kirimKeAppsScript({ action: 'syncBKU', bku: buildBKUPayload(), arsipBku: buildArsipBKUPayload() }, '🟢 BKU Terarsip & Tersimpan');
+        });
     }
 
-    async function simpanPengaturanKeSheets(silent = true) {
-        await kirimKeAppsScript({ action: 'syncPengaturan', pengaturan: buildPengaturanPayload() }, '🟢 Pengaturan Tersimpan', silent);
+    function simpanDPAKeSheets() {
+        jadwalSyncCepat(() => {
+            kirimKeAppsScript({ action: 'syncDPA', dpa: buildDPAPayload() }, '🟢 DPA Tersinkron');
+        });
     }
 
-    async function simpanSemuaKeGoogleSheets(silent = false) {
-        await kirimKeAppsScript({ action: 'syncAll', pengaturan: buildPengaturanPayload(), dpa: buildDPAPayload(), bku: buildBKUPayload(), arsipBku: buildArsipBKUPayload() }, '🟢 Tersimpan di Google Sheets', silent);
+    function simpanPengaturanKeSheets() {
+        jadwalSyncCepat(() => {
+            kirimKeAppsScript({ action: 'syncPengaturan', pengaturan: buildPengaturanPayload() }, '🟢 Pengaturan Tersimpan');
+        });
     }
 
-    async function muatDariGoogleSheets() {
+    async function simpanSemuaKeGoogleSheets() {
+        if (syncTimer) clearTimeout(syncTimer);
+        await kirimKeAppsScript({
+            action: 'syncAll',
+            pengaturan: buildPengaturanPayload(),
+            dpa: buildDPAPayload(),
+            bku: arsipBKU.length === 0 ? [] : buildBKUPayload(),
+            arsipBku: arsipBKU.length === 0 ? [] : buildArsipBKUPayload()
+        }, '🟢 Tersimpan di Google Sheets');
+    }
+
+    function gabungkanDataSheetBKUDanArsip(rowsBKU, rowsArsipBKU) {
+        const metaArsipMap = new Map();
+        if (Array.isArray(rowsArsipBKU)) {
+            for (let idx = 0; idx < rowsArsipBKU.length; idx++) {
+                const r = rowsArsipBKU[idx];
+                const judulAsli = String(r.Judul_Arsip || 'Arsip BKU').trim();
+                const keyNorm = normalisasiNamaArsip(judulAsli);
+                let parsedRaw = [];
+                try { parsedRaw = r.Data_JSON ? JSON.parse(r.Data_JSON) : []; } catch (e) { parsedRaw = []; }
+                let parsedTrx = Array.isArray(parsedRaw) ? parsedRaw : (Array.isArray(parsedRaw.transaksi) ? parsedRaw.transaksi : []);
+                parsedTrx = parsedTrx.map(t => ({ ...t, tanggal: normalisasiTanggalLokal(t.tanggal) }));
+
+                const statusKunci = String(r.Status_Kunci || '').toUpperCase() === 'TERKUNCI' || (!Array.isArray(parsedRaw) && parsedRaw.terkunci === true);
+
+                metaArsipMap.set(keyNorm, {
+                    id: r.ID || (Date.now() + idx),
+                    judul: judulAsli,
+                    waktu: r.Waktu_Simpan || '',
+                    tglTerakhir: normalisasiTanggalLokal(r.Tgl_Terakhir),
+                    uraianTerakhir: r.Uraian_Terakhir || '',
+                    jumlahBaris: parseInt(r.Jumlah_Baris) || parsedTrx.length,
+                    totalBelanja: parseAngkaSheet(r.Total_Belanja),
+                    saldoAkhir: parseAngkaSheet(r.Saldo_Akhir),
+                    terkunci: statusKunci,
+                    transaksiJson: urutkanTransaksiTglDanUraian(parsedTrx)
+                });
+            }
+        }
+
+        const grupSheetBKU = new Map();
+        if (Array.isArray(rowsBKU) && rowsBKU.length > 0) {
+            for (let i = 0; i < rowsBKU.length; i++) {
+                const r = rowsBKU[i];
+                const judul = String(r.Arsip_Judul || 'Arsip BKU').trim();
+                const keyNorm = normalisasiNamaArsip(judul);
+                if (!grupSheetBKU.has(keyNorm)) {
+                    grupSheetBKU.set(keyNorm, { judulAsli: judul, transaksi: [] });
+                }
+
+                const kodeSub = String(r.Kode_Subkegiatan || '-').trim();
+                const kodeRek = String(r.Kode_Rekening || '-').trim();
+                const strukturRek = (kodeSub && kodeSub !== '-')
+                    ? { subkeg: kodeSub, rekening: kodeRek }
+                    : kodeRek;
+
+                grupSheetBKU.get(keyNorm).transaksi.push({
+                    tanggal: normalisasiTanggalLokal(r.Tanggal),
+                    noBukti: String(r.No_Bukti || '-').trim(),
+                    rekening: strukturRek,
+                    uraian: String(r.Uraian || '').trim(),
+                    jenis: String(r.Jenis || 'keluar').trim().toLowerCase() === 'masuk' ? 'masuk' : 'keluar',
+                    jumlah: parseAngkaSheet(r.Jumlah)
+                });
+            }
+        }
+
+        const hasilFinal = [];
+        const kunciSudahDiproses = new Set();
+        let counterIdx = 0;
+
+        grupSheetBKU.forEach((grup, keyNorm) => {
+            kunciSudahDiproses.add(keyNorm);
+            const meta = metaArsipMap.get(keyNorm);
+            const urutTrx = urutkanTransaksiTglDanUraian(grup.transaksi);
+            const trxTerakhir = urutTrx[urutTrx.length - 1] || {};
+            let totalMasuk = 0, totalKeluar = 0;
+            for (let k = 0; k < urutTrx.length; k++) {
+                if (urutTrx[k].jenis === 'masuk') totalMasuk += urutTrx[k].jumlah;
+                else totalKeluar += urutTrx[k].jumlah;
+            }
+
+            hasilFinal.push({
+                id: meta ? meta.id : (Date.now() + counterIdx++),
+                judul: meta ? meta.judul : grup.judulAsli,
+                waktu: (meta && meta.waktu) ? meta.waktu : 'Dimuat dari Sheet BKU',
+                tglTerakhir: normalisasiTanggalLokal(trxTerakhir.tanggal),
+                uraianTerakhir: trxTerakhir.uraian || '',
+                jumlahBaris: urutTrx.length,
+                totalBelanja: totalKeluar,
+                saldoAkhir: totalMasuk - totalKeluar,
+                terkunci: meta ? meta.terkunci : false,
+                transaksi: urutTrx
+            });
+        });
+
+        metaArsipMap.forEach((meta, keyNorm) => {
+            if (!kunciSudahDiproses.has(keyNorm)) {
+                hasilFinal.push({
+                    id: meta.id,
+                    judul: meta.judul,
+                    waktu: meta.waktu,
+                    tglTerakhir: meta.tglTerakhir,
+                    uraianTerakhir: meta.uraianTerakhir,
+                    jumlahBaris: meta.jumlahBaris,
+                    totalBelanja: meta.totalBelanja,
+                    saldoAkhir: meta.saldoAkhir,
+                    terkunci: meta.terkunci,
+                    transaksi: meta.transaksiJson
+                });
+            }
+        });
+
+        return hasilFinal;
+    }
+
+    async function muatDariGoogleSheets(backgroundMode = false) {
         const scriptUrl = getGoogleScriptUrl();
         if (!scriptUrl || !scriptUrl.startsWith('https://')) return;
 
-        setCloudStatus('⏳ Memuat...', '#fefcbf', '#744210');
+        if (abortLoadController) {
+            try { abortLoadController.abort(); } catch (e) {}
+        }
+        abortLoadController = new AbortController();
+
+        const judulAktifSebelumnya = (arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex])
+            ? arsipBKU[arsipBkuAktifIndex].judul
+            : subkegiatanAktifTerakhir;
+
+        setCloudStatus(backgroundMode ? '🔄 Sinkronisasi latar...' : '⏳ Memuat dari Cloud...', '#fefcbf', '#744210');
         try {
-            // Menggunakan metode POST dengan API_SECRET_KEY agar tidak bisa diakses langsung dari browser
             const res = await fetch(scriptUrl, {
                 method: 'POST',
+                cache: 'no-store',
+                signal: abortLoadController.signal,
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     key: API_SECRET_KEY,
-                    action: 'loadAll'
+                    action: 'loadAll',
+                    _t: Date.now()
                 })
             });
             const data = await res.json();
@@ -656,86 +1025,358 @@
             }
 
             if (Array.isArray(data.dpa)) {
-                masterDPA = data.dpa.map(r => ({
-                    kegiatan: r.Kegiatan || '',
-                    subkegiatan: r.Subkegiatan || '',
-                    kodeSubkeg: r.Kode_Subkegiatan || '-',
-                    rekening: r.Kode_Rekening || '-',
-                    namaRekening: r.Nama_Rekening || 'Rincian Belanja Subkegiatan',
-                    uraian: r.Uraian || '',
-                    volume: r.Volume || '',
-                    pagu: parseFloat(String(r.Pagu || 0).replace(/\./g, '').replace(',', '.')) || 0
-                }));
                 arsipDPA = {};
-                data.dpa.forEach(r => {
-                    if (r.Subkegiatan) arsipDPA[r.Subkegiatan] = String(r.Status_Kunci).toUpperCase() === 'TERKUNCI';
-                });
-                perbaruiDropdownSubkegiatan();
-                renderTabelArsipDPA();
-                cekStatusPilihanSubkegiatan();
-            }
+                masterDPA = data.dpa.map(r => {
+                    const hasilPisah = pisahKodeDanNamaSubkegiatan(r.Subkegiatan || '', r.Kode_Subkegiatan || '-');
+                    const namaSubBersih = hasilPisah.namaSubkeg;
+                    const kodeSubBersih = hasilPisah.kodeSubkeg;
+                    const kunciUnik = `${kodeSubBersih}|||${namaSubBersih}`;
+                    const statusTerkunci = String(r.Status_Kunci).toUpperCase() === 'TERKUNCI';
 
-            if (Array.isArray(data.bku)) {
-                if (data.bku.length > 0) {
-                    dataTransaksi = data.bku.map(r => {
-                        let tgl = normalisasiTanggalLokal(r.Tanggal);
-                        let rek = (r.Kode_Subkegiatan && r.Kode_Subkegiatan !== '-')
-                            ? { subkeg: r.Kode_Subkegiatan, rekening: r.Kode_Rekening || '-' }
-                            : (r.Kode_Rekening || '-');
-                        return {
-                            tanggal: tgl,
-                            noBukti: r.No_Bukti || '-',
-                            rekening: rek,
-                            uraian: r.Uraian || '',
-                            jenis: r.Jenis || 'keluar',
-                            jumlah: parseFloat(String(r.Jumlah || 0).replace(/\./g, '').replace(',', '.')) || 0
-                        };
-                    });
-                    dataTransaksi = urutkanTransaksiTglDanUraian(dataTransaksi);
-                } else {
-                    dataTransaksi = [];
-                }
-                renderTabel();
-            }
-
-            if (Array.isArray(data.arsipBku)) {
-                arsipBKU = data.arsipBku.map((r, idx) => {
-                    let parsedTrx = r.Data_JSON ? JSON.parse(r.Data_JSON) : [];
-                    parsedTrx = parsedTrx.map(t => ({ ...t, tanggal: normalisasiTanggalLokal(t.tanggal) }));
+                    if (namaSubBersih) {
+                        arsipDPA[kunciUnik] = statusTerkunci;
+                        arsipDPA[namaSubBersih] = statusTerkunci;
+                    }
                     return {
-                        id: r.ID || (Date.now() + idx),
-                        judul: r.Judul_Arsip || 'Arsip BKU',
-                        waktu: r.Waktu_Simpan || '',
-                        tglTerakhir: normalisasiTanggalLokal(r.Tgl_Terakhir),
-                        uraianTerakhir: r.Uraian_Terakhir || '',
-                        jumlahBaris: parseInt(r.Jumlah_Baris) || 0,
-                        totalBelanja: parseFloat(String(r.Total_Belanja || 0).replace(/\./g, '').replace(',', '.')) || 0,
-                        saldoAkhir: parseFloat(String(r.Saldo_Akhir || 0).replace(/\./g, '').replace(',', '.')) || 0,
-                        transaksi: parsedTrx
+                        kegiatan: r.Kegiatan || '',
+                        subkegiatan: namaSubBersih,
+                        kodeSubkeg: kodeSubBersih,
+                        rekening: r.Kode_Rekening || '-',
+                        namaRekening: r.Nama_Rekening || 'Rincian Belanja Subkegiatan',
+                        uraian: r.Uraian || '',
+                        volume: r.Volume || '',
+                        pagu: parseAngkaSheet(r.Pagu)
                     };
                 });
-                renderTabelArsipBKU();
+
+                perbaruiDropdownSubkegiatan();
+                cekStatusPilihanSubkegiatan();
+                if (document.getElementById('page-dpa').style.display === 'block') {
+                    segarkanSemuaTampilanDPA();
+                } else {
+                    dpaSudahDirender = false;
+                }
             }
 
-            setCloudStatus('🟢 Terhubung', '#c6f6d5', '#22543d');
+            arsipBKU = gabungkanDataSheetBKUDanArsip(data.bku || [], data.arsipBku || []);
+
+            if (judulAktifSebelumnya) {
+                const idxCocok = arsipBKU.findIndex(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(judulAktifSebelumnya));
+                if (idxCocok !== -1) {
+                    arsipBkuAktifIndex = idxCocok;
+                    subkegiatanAktifTerakhir = arsipBKU[idxCocok].judul;
+                    dataTransaksi = urutkanTransaksiTglDanUraian(JSON.parse(JSON.stringify(arsipBKU[idxCocok].transaksi)));
+                } else {
+                    dataTransaksi = [];
+                    arsipBkuAktifIndex = -1;
+                    subkegiatanAktifTerakhir = '';
+                }
+            } else {
+                dataTransaksi = [];
+                arsipBkuAktifIndex = -1;
+                subkegiatanAktifTerakhir = '';
+            }
+
+            renderTabel();
+            renderTabelArsipBKU();
+            perbaruiStatusKunciFormBKU();
+            simpanCacheLokalCepat();
+
+            setCloudStatus('🟢 Terhubung (Sinkron)', '#c6f6d5', '#22543d');
         } catch (err) {
+            if (err && err.name === 'AbortError') return;
             console.error(err);
             setCloudStatus('🔴 Gagal Muat Cloud', '#fed7d7', '#9b2c2c');
         }
     }
 
+    function segarkanSemuaTampilanDPA() {
+        perbaruiDropdownSubkegiatan();
+        perbaruiDatalistDanFilterDPA();
+        renderTabelArsipDPA();
+        renderTabelRincianDPA();
+        cekStatusPilihanSubkegiatan();
+        dpaSudahDirender = true;
+    }
+
     function perbaruiDropdownSubkegiatan() {
-        let selectSubkeg = document.getElementById('select-target-subkegiatan');
-        let selectedVal = selectSubkeg.value;
-        selectSubkeg.innerHTML = '<option value="">-- Pilih 1 Subkegiatan DPA --</option>';
-        let uniqueSubkegs = [...new Set(masterDPA.map(item => item.subkegiatan))];
-        uniqueSubkegs.forEach(subkeg => {
-            let opt = document.createElement('option');
-            opt.value = subkeg;
-            opt.textContent = subkeg;
-            if (subkeg === selectedVal) opt.selected = true;
-            selectSubkeg.appendChild(opt);
+        const selectSubkeg = document.getElementById('select-target-subkegiatan');
+        const selectedVal = selectSubkeg.value;
+        const uniqueSubkegs = [...new Set(masterDPA.map(item => item.subkegiatan))];
+        const opts = ['<option value="">-- Pilih 1 Subkegiatan DPA --</option>'];
+        for (let i = 0; i < uniqueSubkegs.length; i++) {
+            const subkeg = uniqueSubkegs[i];
+            const esc = subkeg.replace(/"/g, '&quot;');
+            opts.push(`<option value="${esc}" ${subkeg === selectedVal ? 'selected' : ''}>${subkeg}</option>`);
+        }
+        selectSubkeg.innerHTML = opts.join('');
+    }
+
+    function perbaruiDatalistDanFilterDPA() {
+        const listKeg = document.getElementById('list-kegiatan-dpa');
+        const listSub = document.getElementById('list-subkeg-dpa');
+        const filterSub = document.getElementById('filter-subkeg-rincian-dpa');
+
+        const uniqueKegs = [...new Set(masterDPA.map(i => i.kegiatan).filter(Boolean))];
+        const daftarUnikSub = ambilDaftarSubkegiatanUnikDPA();
+
+        if (listKeg) listKeg.innerHTML = uniqueKegs.map(k => `<option value="${k.replace(/"/g, '&quot;')}">`).join('');
+        if (listSub) listSub.innerHTML = daftarUnikSub.map(s => `<option value="${s.namaSubkeg.replace(/"/g, '&quot;')}">`).join('');
+        if (filterSub) {
+            const currentFilter = filterSub.value;
+            filterSub.innerHTML = '<option value="">-- Pilih Subkegiatan --</option>' +
+                daftarUnikSub.map(s => `<option value="${s.kunciUnik.replace(/"/g, '&quot;')}" ${s.kunciUnik === currentFilter ? 'selected' : ''}>${s.kodeSubkeg !== '-' ? s.kodeSubkeg + ' - ' : ''}${s.namaSubkeg}</option>`).join('');
+        }
+    }
+
+    function bersihkanInputKodeSubkeg() {
+        const kodeInput = document.getElementById('dpa-kode-subkeg');
+        if (!kodeInput || !kodeInput.value.trim()) return;
+        const hasil = pisahKodeDanNamaSubkegiatan('', kodeInput.value);
+        if (hasil.kodeSubkeg && hasil.kodeSubkeg !== '-') {
+            kodeInput.value = hasil.kodeSubkeg;
+        }
+    }
+
+    function sinkronOtomatisSubkegInput() {
+        const subInput = document.getElementById('dpa-subkegiatan');
+        const kodeInput = document.getElementById('dpa-kode-subkeg');
+        const kegInput = document.getElementById('dpa-kegiatan');
+        const rawVal = subInput.value;
+        if (!rawVal.trim()) return;
+
+        const hasilPisah = pisahKodeDanNamaSubkegiatan(rawVal, kodeInput.value);
+        if (hasilPisah.kodeSubkeg !== '-' && hasilPisah.namaSubkeg && hasilPisah.namaSubkeg !== rawVal.trim()) {
+            subInput.value = hasilPisah.namaSubkeg;
+            if (!kodeInput.value.trim()) kodeInput.value = hasilPisah.kodeSubkeg;
+        }
+
+        const namaCari = subInput.value.trim().toLowerCase();
+        const ditemukan = masterDPA.find(item => item.subkegiatan.toLowerCase() === namaCari);
+        if (ditemukan) {
+            if (!kodeInput.value.trim() && ditemukan.kodeSubkeg && ditemukan.kodeSubkeg !== '-') kodeInput.value = ditemukan.kodeSubkeg;
+            if (!kegInput.value.trim() && ditemukan.kegiatan) kegInput.value = ditemukan.kegiatan;
+        }
+    }
+
+    function hitungPaguOtomatisDPA() {
+        const volAngka = parseFloat(document.getElementById('dpa-volume-angka').value) || 0;
+        const hargaSatuan = parseFloat(document.getElementById('dpa-harga-satuan').value) || 0;
+        const totalPagu = volAngka * hargaSatuan;
+
+        document.getElementById('dpa-pagu').value = totalPagu;
+        document.getElementById('dpa-pagu-tampil').value = `Rp ${formatRupiah(totalPagu)}`;
+    }
+
+    function pecahKomponenRincianDPA(volumeTeks, pagu) {
+        const teks = String(volumeTeks || '').trim();
+        if (!teks) return { volAngka: 1, satuan: '', hargaSatuan: pagu || 0 };
+        const matchAngka = teks.match(/^([0-9.,]+)\s*(.*)$/);
+        if (matchAngka) {
+            const qty = parseFloat(matchAngka[1].replace(/\./g, '').replace(',', '.')) || 0;
+            const satuanTeks = matchAngka[2].trim();
+            const harga = qty > 0 ? (pagu / qty) : pagu;
+            return { volAngka: qty > 0 ? qty : 1, satuan: satuanTeks, hargaSatuan: Math.round(harga * 100) / 100 };
+        }
+        return { volAngka: 1, satuan: teks, hargaSatuan: pagu || 0 };
+    }
+
+    function simpanItemDPAManual() {
+        const editIdx = parseInt(document.getElementById('edit-dpa-index').value);
+        const kegiatan = document.getElementById('dpa-kegiatan').value.trim();
+        const subkegRaw = document.getElementById('dpa-subkegiatan').value.trim();
+        const kodeSubkegRaw = document.getElementById('dpa-kode-subkeg').value.trim();
+        const rekening = document.getElementById('dpa-rekening').value.trim() || '-';
+        const namaRekening = document.getElementById('dpa-nama-rekening').value.trim() || 'Rincian Belanja Subkegiatan';
+        const uraian = document.getElementById('dpa-uraian').value.trim();
+
+        const volAngka = parseFloat(document.getElementById('dpa-volume-angka').value);
+        const satuan = document.getElementById('dpa-satuan').value.trim();
+        const hargaSatuan = parseFloat(document.getElementById('dpa-harga-satuan').value);
+        const pagu = (!isNaN(volAngka) && !isNaN(hargaSatuan)) ? (volAngka * hargaSatuan) : 0;
+
+        if (!subkegRaw || !uraian || isNaN(volAngka) || volAngka <= 0 || isNaN(hargaSatuan) || hargaSatuan <= 0) {
+            alert('Mohon lengkapi Nama Subkegiatan, Uraian Rincian, Volume (> 0), dan Harga Satuan (> 0)!');
+            return;
+        }
+
+        const hasilPisah = pisahKodeDanNamaSubkegiatan(subkegRaw, kodeSubkegRaw);
+        const subkegiatan = hasilPisah.namaSubkeg;
+        const kodeSubkeg = hasilPisah.kodeSubkeg;
+        const kunciUnik = `${kodeSubkeg}|||${subkegiatan}`;
+
+        const itemBaru = {
+            kegiatan,
+            subkegiatan,
+            kodeSubkeg,
+            rekening,
+            namaRekening,
+            uraian,
+            volume: satuan ? `${volAngka} ${satuan}` : `${volAngka}`,
+            pagu
+        };
+
+        if (editIdx === -1) masterDPA.push(itemBaru);
+        else masterDPA[editIdx] = itemBaru;
+
+        if (arsipDPA[kunciUnik] === undefined) arsipDPA[kunciUnik] = false;
+
+        resetFormDPAManual();
+        segarkanSemuaTampilanDPA();
+        simpanDPAKeSheets();
+    }
+
+    function editItemDPAManual(index) {
+        const item = masterDPA[index];
+        if (!item) return;
+
+        const hasilPisah = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+        const kunciUnik = `${hasilPisah.kodeSubkeg}|||${hasilPisah.namaSubkeg}`;
+
+        if (isSubkegiatanTerkunciUnik(kunciUnik, hasilPisah.namaSubkeg)) {
+            alert(`Subkegiatan "${hasilPisah.namaSubkeg}" berstatus TERKUNCI.\nSilakan klik tombol "Buka" terlebih dahulu sebelum mengedit rincian.`);
+            return;
+        }
+
+        const komponen = pecahKomponenRincianDPA(item.volume, item.pagu);
+
+        document.getElementById('edit-dpa-index').value = index;
+        document.getElementById('dpa-kegiatan').value = item.kegiatan || '';
+        document.getElementById('dpa-kode-subkeg').value = hasilPisah.kodeSubkeg === '-' ? '' : hasilPisah.kodeSubkeg;
+        document.getElementById('dpa-subkegiatan').value = hasilPisah.namaSubkeg || '';
+        document.getElementById('dpa-rekening').value = item.rekening === '-' ? '' : (item.rekening || '');
+        document.getElementById('dpa-nama-rekening').value = item.namaRekening || '';
+        document.getElementById('dpa-uraian').value = item.uraian || '';
+        document.getElementById('dpa-volume-angka').value = komponen.volAngka;
+        document.getElementById('dpa-satuan').value = komponen.satuan;
+        document.getElementById('dpa-harga-satuan').value = komponen.hargaSatuan;
+        hitungPaguOtomatisDPA();
+
+        document.getElementById('form-dpa-title').innerText = `✏️ Edit Rincian DPA (Baris #${index + 1}):`;
+        document.getElementById('btn-simpan-dpa-manual').innerText = '💾 Perbarui Rincian DPA';
+        document.getElementById('btn-batal-edit-dpa').style.display = 'inline-block';
+        document.getElementById('form-dpa-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetFormDPAManual() {
+        document.getElementById('edit-dpa-index').value = '-1';
+        document.getElementById('dpa-uraian').value = '';
+        document.getElementById('dpa-volume-angka').value = '';
+        document.getElementById('dpa-satuan').value = '';
+        document.getElementById('dpa-harga-satuan').value = '';
+        document.getElementById('dpa-pagu').value = '0';
+        document.getElementById('dpa-pagu-tampil').value = 'Rp 0';
+        document.getElementById('form-dpa-title').innerText = '✍️ Input Manual Rincian DPA:';
+        document.getElementById('btn-simpan-dpa-manual').innerText = '+ Tambahkan Rincian DPA';
+        document.getElementById('btn-batal-edit-dpa').style.display = 'none';
+    }
+
+    function hapusItemDPAManual(index) {
+        const item = masterDPA[index];
+        if (!item) return;
+
+        const hasilPisah = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+        const kunciUnik = `${hasilPisah.kodeSubkeg}|||${hasilPisah.namaSubkeg}`;
+
+        if (isSubkegiatanTerkunciUnik(kunciUnik, hasilPisah.namaSubkeg)) {
+            alert(`Subkegiatan "${hasilPisah.namaSubkeg}" berstatus TERKUNCI.\nSilakan klik tombol "Buka" terlebih dahulu sebelum menghapus rincian.`);
+            return;
+        }
+
+        if (!confirm(`Hapus rincian "${item.uraian}" dari DPA?`)) return;
+
+        masterDPA.splice(index, 1);
+
+        const masihAdaSubkeg = masterDPA.some(i => {
+            const h = pisahKodeDanNamaSubkegiatan(i.subkegiatan, i.kodeSubkeg);
+            return `${h.kodeSubkeg}|||${h.namaSubkeg}` === kunciUnik;
         });
+        if (!masihAdaSubkeg) {
+            delete arsipDPA[kunciUnik];
+            delete arsipDPA[hasilPisah.namaSubkeg];
+        }
+
+        resetFormDPAManual();
+        segarkanSemuaTampilanDPA();
+        simpanDPAKeSheets();
+    }
+
+    function renderTabelRincianDPA() {
+        const container = document.getElementById('container-tabel-rincian-dpa');
+        if (!container) return;
+
+        const filterSubKunci = document.getElementById('filter-subkeg-rincian-dpa')?.value || '';
+        if (!filterSubKunci) {
+            container.innerHTML = '<p style="color: #718096; font-style: italic;">Silakan pilih subkegiatan terlebih dahulu untuk menampilkan rincian.</p>';
+            return;
+        }
+
+        const daftarTerfilter = [];
+        for (let originalIndex = 0; originalIndex < masterDPA.length; originalIndex++) {
+            const item = masterDPA[originalIndex];
+            const h = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+            const kUnik = `${h.kodeSubkeg}|||${h.namaSubkeg}`;
+            if (kUnik === filterSubKunci) {
+                daftarTerfilter.push({ ...item, originalIndex, kUnik, hasilPisah: h });
+            }
+        }
+
+        if (daftarTerfilter.length === 0) {
+            container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada rincian DPA untuk subkegiatan ini.</p>';
+            return;
+        }
+
+        let totalPagu = 0;
+        const rows = [];
+        for (let idx = 0; idx < daftarTerfilter.length; idx++) {
+            const item = daftarTerfilter[idx];
+            totalPagu += item.pagu || 0;
+            const terkunci = isSubkegiatanTerkunciUnik(item.kUnik, item.hasilPisah.namaSubkeg);
+            const attrAksi = terkunci ? 'disabled style="opacity:0.45;"' : '';
+            const komponen = pecahKomponenRincianDPA(item.volume, item.pagu);
+            const hasilPisah = item.hasilPisah;
+
+            rows.push(`<tr>
+                <td class="text-center">${idx + 1}</td>
+                <td class="text-center" style="font-family:monospace;font-weight:600;color:#1a365d;">${hasilPisah.kodeSubkeg}</td>
+                <td><b>${hasilPisah.namaSubkeg}</b></td>
+                <td class="text-center" style="font-family:monospace;">${item.rekening || '-'}</td>
+                <td>${item.uraian}<div style="font-size:10px;color:#718096;">${item.namaRekening || ''}</div></td>
+                <td class="text-center">${komponen.volAngka}</td>
+                <td class="text-center">${komponen.satuan || '-'}</td>
+                <td class="text-right">Rp ${formatRupiah(komponen.hargaSatuan)}</td>
+                <td class="text-right"><b>Rp ${formatRupiah(item.pagu)}</b></td>
+                <td class="text-center" style="white-space:nowrap;">
+                    <button type="button" class="btn btn-warning" ${attrAksi} onclick="editItemDPAManual(${item.originalIndex})">Edit</button>
+                    <button type="button" class="btn btn-danger" ${attrAksi} onclick="hapusItemDPAManual(${item.originalIndex})">Hapus</button>
+                </td>
+            </tr>`);
+        }
+
+        container.innerHTML = `<table>
+            <thead>
+                <tr>
+                    <th style="width: 4%;">No</th>
+                    <th style="width: 11%;">Kode Subkegiatan</th>
+                    <th style="width: 18%;">Nama Subkegiatan</th>
+                    <th style="width: 11%;">Kode Rekening</th>
+                    <th style="width: 20%;">Uraian Rincian</th>
+                    <th style="width: 6%;">Volume</th>
+                    <th style="width: 6%;">Satuan</th>
+                    <th style="width: 9%;">Harga Satuan</th>
+                    <th style="width: 9%;">Pagu (Rp)</th>
+                    <th style="width: 6%;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows.join('')}
+                <tr style="background:#edf2f7;font-weight:bold;">
+                    <td colspan="8" class="text-right">TOTAL PAGU ANGGARAN</td>
+                    <td class="text-right">Rp ${formatRupiah(totalPagu)}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>`;
     }
 
     function bukaHalaman(namaHalaman) {
@@ -743,7 +1384,12 @@
             document.getElementById(`page-${h}`).style.display = (h === namaHalaman) ? 'block' : 'none';
             document.getElementById(`tab-${h}`).classList.toggle('active', h === namaHalaman);
         });
-        if (namaHalaman === 'bku') renderTabel();
+        if (namaHalaman === 'bku') {
+            perbaruiStatusKunciFormBKU();
+        }
+        if (namaHalaman === 'dpa' && !dpaSudahDirender) {
+            segarkanSemuaTampilanDPA();
+        }
     }
 
     function ambilKodeSubkegiatan(teks) {
@@ -759,11 +1405,11 @@
     }
 
     function formatRupiah(angka) {
-        return new Intl.NumberFormat('id-ID').format(Math.round(angka || 0));
+        return fmtRupiah.format(Math.round(angka || 0));
     }
 
     function formatRupiahDesimal(angka) {
-        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(angka || 0);
+        return fmtRupiahDes.format(angka || 0);
     }
 
     function urutkanTransaksiTglDanUraian(daftarTransaksi) {
@@ -780,26 +1426,27 @@
         dataTransaksi = urutkanTransaksiTglDanUraian(dataTransaksi);
         resetFormTransaksi();
         renderTabel();
-        setTimeout(() => window.print(), 300);
+        setTimeout(() => window.print(), 100);
     }
 
     function muatDPAExcel(event) {
-        let file = event.target.files[0];
+        const file = event.target.files[0];
         if (!file || typeof XLSX === 'undefined') return;
 
-        let reader = new FileReader();
-        reader.onload = async function(e) {
-            let data = new Uint8Array(e.target.result);
-            let workbook = XLSX.read(data, { type: 'array' });
-            let rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
 
-            let parsedDPA = [], currentKegiatan = "", currentSubkeg = "", currentKodeSubkeg = "-", currentRekening = "", namaRekeningMap = {};
+            const parsedDPA = [], namaRekeningMap = {};
+            let currentKegiatan = "", currentSubkeg = "", currentKodeSubkeg = "-", currentRekening = "";
             for (let i = 1; i < rows.length; i++) {
-                let row = rows[i];
-                let colA = row[0] ? String(row[0]).trim() : "";
-                let colB = row[1] ? String(row[1]).trim() : "";
-                let colC = row[2] ? String(row[2]).trim() : "";
-                let colD = row[3] ? String(row[3]).trim() : "";
+                const row = rows[i];
+                const colA = row[0] ? String(row[0]).trim() : "";
+                const colB = row[1] ? String(row[1]).trim() : "";
+                const colC = row[2] ? String(row[2]).trim() : "";
+                const colD = row[3] ? String(row[3]).trim() : "";
                 let paguFinal = 0, volumeSatuan = "";
 
                 if (row[4] !== undefined && !isNaN(parseFloat(row[4]))) { paguFinal = parseFloat(row[4]); volumeSatuan = colD; }
@@ -810,9 +1457,9 @@
 
                 if (colA.length > 0 && !colB && !colC && paguFinal === 0) currentKegiatan = colA;
                 else if (colA.length > 0 && (colA.includes('.') || colA.length >= 10)) {
-                    currentSubkeg = colA;
-                    const kodeDariLabel = ambilKodeSubkegiatan(colA);
-                    if (kodeSubkegiatanValid(kodeDariLabel)) currentKodeSubkeg = kodeDariLabel;
+                    const hasilPisah = pisahKodeDanNamaSubkegiatan(colA, currentKodeSubkeg);
+                    currentSubkeg = hasilPisah.namaSubkeg;
+                    if (kodeSubkegiatanValid(hasilPisah.kodeSubkeg)) currentKodeSubkeg = hasilPisah.kodeSubkeg;
                 }
 
                 if (colB) {
@@ -821,12 +1468,13 @@
                 }
 
                 if (colC && paguFinal > 0) {
-                    let isHeaderRekening = colB && !volumeSatuan && rows[i + 1] && !rows[i + 1][1] && rows[i + 1][2];
+                    const isHeaderRekening = colB && !volumeSatuan && rows[i + 1] && !rows[i + 1][1] && rows[i + 1][2];
                     if (!isHeaderRekening) {
+                        const subkegFinal = pisahKodeDanNamaSubkegiatan(currentSubkeg || currentKegiatan, currentKodeSubkeg);
                         parsedDPA.push({
                             kegiatan: currentKegiatan,
-                            subkegiatan: currentSubkeg || currentKegiatan,
-                            kodeSubkeg: currentKodeSubkeg,
+                            subkegiatan: subkegFinal.namaSubkeg,
+                            kodeSubkeg: subkegFinal.kodeSubkeg,
                             rekening: currentRekening || '-',
                             namaRekening: namaRekeningMap[currentRekening] || 'Rincian Belanja Subkegiatan',
                             uraian: colC,
@@ -839,23 +1487,39 @@
 
             masterDPA = parsedDPA;
             arsipDPA = {};
-            [...new Set(masterDPA.map(item => item.subkegiatan))].forEach(s => { arsipDPA[s] = false; });
+            ambilDaftarSubkegiatanUnikDPA().forEach(sub => {
+                arsipDPA[sub.kunciUnik] = false;
+            });
 
-            perbaruiDropdownSubkegiatan();
-            renderTabelArsipDPA();
-            cekStatusPilihanSubkegiatan();
-            await simpanDPAKeSheets(true);
+            segarkanSemuaTampilanDPA();
+            simpanDPAKeSheets();
         };
         reader.readAsArrayBuffer(file);
     }
 
     function cekStatusPilihanSubkegiatan() {
-        let selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
-        let btnEksekusi = document.getElementById('btn-eksekusi');
-        let btnArsipkanBKU = document.getElementById('btn-arsipkan-bku');
-        const aktif = !selectedSubkeg || arsipDPA[selectedSubkeg] === true;
-        btnEksekusi.disabled = !aktif; btnEksekusi.style.opacity = aktif ? '1' : '0.5';
-        btnArsipkanBKU.disabled = !aktif; btnArsipkanBKU.style.opacity = aktif ? '1' : '0.5';
+        const selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
+        const btnEksekusi = document.getElementById('btn-eksekusi');
+        const btnArsipkanBKU = document.getElementById('btn-arsipkan-bku');
+        const badgeKunciEksekusi = document.getElementById('badge-kunci-eksekusi-bku');
+
+        const subTerkunci = ambilDaftarSubkegiatanUnikDPA().some(s => s.namaSubkeg === selectedSubkeg && isSubkegiatanTerkunciUnik(s.kunciUnik, s.namaSubkeg));
+        const aktif = !selectedSubkeg || subTerkunci;
+
+        const arsipPilihanTerkunci = selectedSubkeg
+            ? arsipBKU.some(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(selectedSubkeg) && item.terkunci === true)
+            : false;
+
+        if (badgeKunciEksekusi) {
+            badgeKunciEksekusi.style.display = arsipPilihanTerkunci ? 'inline-block' : 'none';
+        }
+
+        btnEksekusi.disabled = !aktif || arsipPilihanTerkunci;
+        btnEksekusi.style.opacity = (aktif && !arsipPilihanTerkunci) ? '1' : '0.5';
+
+        const arsipBkuKunci = isArsipBKUAktifTerkunci();
+        btnArsipkanBKU.disabled = !aktif || arsipBkuKunci || arsipPilihanTerkunci;
+        btnArsipkanBKU.style.opacity = (aktif && !arsipBkuKunci && !arsipPilihanTerkunci) ? '1' : '0.5';
     }
 
     function normalisasiNamaArsip(teks) {
@@ -864,18 +1528,23 @@
 
     function sinkronkanArsipAktifDariTabelUtama() {
         if (arsipBkuAktifIndex === -1 || !arsipBKU[arsipBkuAktifIndex]) return;
+        if (arsipBKU[arsipBkuAktifIndex].terkunci === true) return;
 
         if (dataTransaksi.length === 0) {
             arsipBKU.splice(arsipBkuAktifIndex, 1);
             arsipBkuAktifIndex = -1;
             subkegiatanAktifTerakhir = '';
             renderTabelArsipBKU();
+            simpanCacheLokalCepat();
             return;
         }
 
         const trxTerakhir = dataTransaksi[dataTransaksi.length - 1];
-        const totalPenerimaan = dataTransaksi.filter(t => t.jenis === 'masuk').reduce((acc, t) => acc + t.jumlah, 0);
-        const totalPengeluaran = dataTransaksi.filter(t => t.jenis === 'keluar').reduce((acc, t) => acc + t.jumlah, 0);
+        let totalPenerimaan = 0, totalPengeluaran = 0;
+        for (let i = 0; i < dataTransaksi.length; i++) {
+            if (dataTransaksi[i].jenis === 'masuk') totalPenerimaan += dataTransaksi[i].jumlah;
+            else totalPengeluaran += dataTransaksi[i].jumlah;
+        }
 
         arsipBKU[arsipBkuAktifIndex] = {
             ...arsipBKU[arsipBkuAktifIndex],
@@ -887,32 +1556,52 @@
             transaksi: JSON.parse(JSON.stringify(dataTransaksi))
         };
         renderTabelArsipBKU();
+        simpanCacheLokalCepat();
     }
 
-    async function simpanKeArsipBKU() {
-        let selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
-        if (selectedSubkeg && arsipDPA[selectedSubkeg] !== true) return;
+    function simpanKeArsipBKU() {
+        if (isArsipBKUAktifTerkunci()) {
+            alert('Arsip BKU ini berstatus TERKUNCI. Buka kunci terlebih dahulu pada Daftar Arsip BKU.');
+            return;
+        }
+
+        const selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
+        const subTerkunci = ambilDaftarSubkegiatanUnikDPA().some(s => s.namaSubkeg === selectedSubkeg && isSubkegiatanTerkunciUnik(s.kunciUnik, s.namaSubkeg));
+        if (selectedSubkeg && !subTerkunci) return;
 
         dataTransaksi = urutkanTransaksiTglDanUraian(dataTransaksi);
         renderTabel();
-        if (dataTransaksi.length === 0) return;
+        if (dataTransaksi.length === 0) {
+            alert('Tabel BKU masih kosong. Silakan buat/eksekusi transaksi terlebih dahulu sebelum mengarsipkan.');
+            return;
+        }
 
         const transaksiTerakhir = dataTransaksi[dataTransaksi.length - 1];
         const periodeAktif = document.getElementById('input-periode').value.trim();
-        let defaultJudul = (arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex])
-            ? arsipBKU[arsipBkuAktifIndex].judul
-            : (selectedSubkeg || subkegiatanAktifTerakhir || (periodeAktif ? `BKU ${periodeAktif} (s.d. ${transaksiTerakhir.tanggal})` : `BKU (s.d. ${transaksiTerakhir.tanggal})`));
 
-        let judulArsip = prompt(`Masukkan Nama / Keterangan Arsip BKU:`, defaultJudul);
+        const defaultJudul = selectedSubkeg
+            || ((arsipBkuAktifIndex !== -1 && arsipBKU[arsipBkuAktifIndex]) ? arsipBKU[arsipBkuAktifIndex].judul : '')
+            || subkegiatanAktifTerakhir
+            || (periodeAktif ? `BKU ${periodeAktif} (s.d. ${transaksiTerakhir.tanggal})` : `BKU (s.d. ${transaksiTerakhir.tanggal})`);
+
+        const judulArsip = prompt(`Masukkan Nama / Keterangan Arsip BKU:`, defaultJudul);
         if (!judulArsip || judulArsip.trim() === '') return;
 
-        let judulBersih = judulArsip.replace(/\s+/g, ' ').trim();
-        let indeksEksisting = arsipBKU.findIndex(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(judulBersih));
+        const judulBersih = judulArsip.replace(/\s+/g, ' ').trim();
+        const indeksEksisting = arsipBKU.findIndex(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(judulBersih));
 
-        let totalPenerimaan = dataTransaksi.filter(t => t.jenis === 'masuk').reduce((acc, t) => acc + t.jumlah, 0);
-        let totalPengeluaran = dataTransaksi.filter(t => t.jenis === 'keluar').reduce((acc, t) => acc + t.jumlah, 0);
-        let waktuSimpan = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-        let salinan = JSON.parse(JSON.stringify(dataTransaksi));
+        if (indeksEksisting !== -1 && arsipBKU[indeksEksisting].terkunci === true) {
+            alert(`Arsip BKU "${judulBersih}" berstatus TERKUNCI dan tidak dapat ditimpa. Silakan buka kuncinya terlebih dahulu.`);
+            return;
+        }
+
+        let totalPenerimaan = 0, totalPengeluaran = 0;
+        for (let i = 0; i < dataTransaksi.length; i++) {
+            if (dataTransaksi[i].jenis === 'masuk') totalPenerimaan += dataTransaksi[i].jumlah;
+            else totalPengeluaran += dataTransaksi[i].jumlah;
+        }
+        const waktuSimpan = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+        const salinan = JSON.parse(JSON.stringify(dataTransaksi));
 
         const recordArsip = {
             id: indeksEksisting !== -1 ? arsipBKU[indeksEksisting].id : Date.now(),
@@ -923,6 +1612,7 @@
             jumlahBaris: dataTransaksi.length,
             totalBelanja: totalPengeluaran,
             saldoAkhir: totalPenerimaan - totalPengeluaran,
+            terkunci: indeksEksisting !== -1 ? (arsipBKU[indeksEksisting].terkunci === true) : false,
             transaksi: salinan
         };
 
@@ -936,34 +1626,51 @@
 
         subkegiatanAktifTerakhir = judulBersih;
         renderTabelArsipBKU();
-        await simpanBKUKeSheets(true);
+        perbaruiStatusKunciFormBKU();
+        simpanBKUKeSheets();
+    }
+
+    function toggleKunciArsipBKU(index) {
+        const itemArsip = arsipBKU[index];
+        if (!itemArsip) return;
+
+        itemArsip.terkunci = !(itemArsip.terkunci === true);
+        resetFormTransaksi();
+        renderTabel();
+        renderTabelArsipBKU();
+        perbaruiStatusKunciFormBKU();
+        simpanBKUKeSheets();
     }
 
     function muatArsipBKU(index) {
-        let itemArsip = arsipBKU[index];
+        const itemArsip = arsipBKU[index];
         if (!itemArsip) return;
-        if (confirm(`Muat arsip BKU "${itemArsip.judul}" ke tabel utama?`)) {
-            dataTransaksi = urutkanTransaksiTglDanUraian(JSON.parse(JSON.stringify(itemArsip.transaksi)));
-            arsipBkuAktifIndex = index;
-            subkegiatanAktifTerakhir = itemArsip.judul;
-            resetFormTransaksi();
-            renderTabel();
-            renderTabelArsipBKU();
-        }
+        dataTransaksi = urutkanTransaksiTglDanUraian(JSON.parse(JSON.stringify(itemArsip.transaksi)));
+        arsipBkuAktifIndex = index;
+        subkegiatanAktifTerakhir = itemArsip.judul;
+        resetFormTransaksi();
+        renderTabel();
+        renderTabelArsipBKU();
+        perbaruiStatusKunciFormBKU();
     }
 
     function cetakArsipBKU(index) {
-        let itemArsip = arsipBKU[index];
+        const itemArsip = arsipBKU[index];
         if (!itemArsip) return;
         document.body.classList.remove('printing-dpa');
         itemArsip.transaksi = urutkanTransaksiTglDanUraian(itemArsip.transaksi);
-        renderTabelCustom(itemArsip.transaksi);
-        setTimeout(() => { window.print(); renderTabel(); }, 300);
+        renderTabelCustom(itemArsip.transaksi, itemArsip.terkunci === true);
+        setTimeout(() => { window.print(); renderTabel(); }, 100);
     }
 
-    async function hapusArsipBKU(index) {
-        let itemArsip = arsipBKU[index];
+    function hapusArsipBKU(index) {
+        const itemArsip = arsipBKU[index];
         if (!itemArsip) return;
+
+        if (itemArsip.terkunci === true) {
+            alert(`Arsip BKU "${itemArsip.judul}" berstatus TERKUNCI.\nSilakan klik tombol "Buka" terlebih dahulu sebelum menghapus.`);
+            return;
+        }
 
         if (!confirm(`Yakin ingin menghapus arsip BKU "${itemArsip.judul}" beserta seluruh rinciannya dari BKU dan Google Sheet BKU?`)) return;
 
@@ -986,157 +1693,248 @@
         }
 
         renderTabelArsipBKU();
-        await simpanBKUKeSheets(true);
+        perbaruiStatusKunciFormBKU();
+        simpanBKUKeSheets();
     }
 
     function renderTabelArsipBKU() {
-        let container = document.getElementById('container-tabel-arsip-bku');
+        const container = document.getElementById('container-tabel-arsip-bku');
         if (arsipBKU.length === 0) {
             container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada arsip BKU yang disimpan.</p>';
             return;
         }
-        let html = `<table style="background:white;"><thead><tr><th style="width:5%;">No</th><th style="width:38%;">Nama / Keterangan Arsip BKU</th><th style="width:17%;">Waktu Simpan</th><th style="width:15%;">Total Pengeluaran</th><th style="width:25%;">Aksi</th></tr></thead><tbody>`;
-        arsipBKU.forEach((arsip, idx) => {
+        const rows = [];
+        for (let idx = 0; idx < arsipBKU.length; idx++) {
+            const arsip = arsipBKU[idx];
+            const isLocked = arsip.terkunci === true;
             const badgeAktif = idx === arsipBkuAktifIndex
                 ? ' <span style="background:#ebf8ff;color:#2b6cb0;border:1px solid #90cdf4;padding:1px 5px;border-radius:3px;font-size:10px;">Dimuat</span>'
                 : '';
-            html += `<tr><td class="text-center">${idx + 1}</td><td><b>${arsip.judul}</b>${badgeAktif}<div style="font-size:10px;color:#718096;">(${arsip.jumlahBaris} baris | Trx Terakhir: ${arsip.tglTerakhir || '-'})</div></td><td class="text-center" style="font-size:11px;">${arsip.waktu}</td><td class="text-right">Rp ${formatRupiah(arsip.totalBelanja)}</td><td class="text-center" style="white-space:nowrap;"><button type="button" class="btn btn-archive" style="padding:3px 6px;font-size:10px;" onclick="muatArsipBKU(${idx})">📂 Muat</button> <button type="button" class="btn btn-print" onclick="cetakArsipBKU(${idx})">🖨️ Cetak</button> <button type="button" class="btn btn-danger" style="padding:3px 6px;font-size:10px;" onclick="hapusArsipBKU(${idx})">Hapus</button></td></tr>`;
-        });
-        container.innerHTML = html + `</tbody></table>`;
+            const badgeKunci = isLocked
+                ? '<span class="badge-arsip" style="background:#c6f6d5;color:#22543d;">🔒 Terkunci</span>'
+                : '<span class="badge-arsip" style="background:#fed7d7;color:#9b2c2c;">📂 Terbuka</span>';
+            const btnHapusAttr = isLocked
+                ? 'disabled style="padding:3px 6px;font-size:10px;"'
+                : 'style="padding:3px 6px;font-size:10px;"';
+
+            rows.push(`<tr>
+                <td class="text-center">${idx + 1}</td>
+                <td><b>${arsip.judul}</b>${badgeAktif}<div style="font-size:10px;color:#718096;">(${arsip.jumlahBaris} baris | Trx Terakhir: ${arsip.tglTerakhir || '-'})</div></td>
+                <td class="text-center" style="font-size:11px;">${arsip.waktu}</td>
+                <td class="text-right">Rp ${formatRupiah(arsip.totalBelanja)}</td>
+                <td class="text-center">${badgeKunci}</td>
+                <td class="text-center" style="white-space:nowrap;">
+                    <button type="button" class="btn btn-archive" style="padding:3px 6px;font-size:10px;" onclick="muatArsipBKU(${idx})">📂 Muat</button>
+                    <button type="button" class="btn btn-print" onclick="cetakArsipBKU(${idx})">🖨️ Cetak</button>
+                    <button type="button" class="btn ${isLocked ? 'btn-warning' : 'btn-success'}" style="padding:3px 6px;font-size:10px;" onclick="toggleKunciArsipBKU(${idx})">${isLocked ? '🔓 Buka' : '🔒 Kunci'}</button>
+                    <button type="button" class="btn btn-danger" ${btnHapusAttr} onclick="hapusArsipBKU(${idx})">Hapus</button>
+                </td>
+            </tr>`);
+        }
+        container.innerHTML = `<table style="background:white;"><thead><tr><th style="width:4%;">No</th><th style="width:33%;">Nama / Keterangan Arsip BKU</th><th style="width:14%;">Waktu Simpan</th><th style="width:14%;">Total Pengeluaran</th><th style="width:11%;">Status</th><th style="width:24%;">Aksi</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
 
-    async function toggleArsipDPAStatusByIndex(index) {
-        let subkeg = [...new Set(masterDPA.map(item => item.subkegiatan))][index];
-        if (!subkeg) return;
-        arsipDPA[subkeg] = !arsipDPA[subkeg];
-        cekStatusPilihanSubkegiatan();
-        renderTabelArsipDPA();
-        await simpanDPAKeSheets(true);
+    // ==================== MANAJEMEN STATUS SUBKEGIATAN DPA (BERDIRI SENDIRI) ====================
+
+    function toggleArsipDPAStatusByIndex(index) {
+        const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
+        const target = daftarUnik[index];
+        if (!target) return;
+
+        const statusSekarang = isSubkegiatanTerkunciUnik(target.kunciUnik, target.namaSubkeg);
+        arsipDPA[target.kunciUnik] = !statusSekarang;
+
+        segarkanSemuaTampilanDPA();
+        simpanDPAKeSheets();
     }
 
     function ekstrakKoefisienSatuanHarga(volumeTeks, pagu) {
-        let teks = String(volumeTeks || '').trim();
+        const teks = String(volumeTeks || '').trim();
         if (!teks) return { koefisien: '-', satuan: '-', hargaSatuan: formatRupiahDesimal(pagu) };
-        let matchAngka = teks.match(/^([0-9.,]+)\s*(.*)$/);
+        const matchAngka = teks.match(/^([0-9.,]+)\s*(.*)$/);
         if (matchAngka) {
-            let qty = parseFloat(matchAngka[1].replace(/\./g, '').replace(',', '.'));
-            let sisaTeks = matchAngka[2].trim();
+            const qty = parseFloat(matchAngka[1].replace(/\./g, '').replace(',', '.'));
+            const sisaTeks = matchAngka[2].trim();
             return { koefisien: teks, satuan: sisaTeks ? sisaTeks.split(/\s+/).pop() : '-', hargaSatuan: formatRupiahDesimal((qty && qty > 0) ? (pagu / qty) : pagu) };
         }
         return { koefisien: teks, satuan: '-', hargaSatuan: formatRupiahDesimal(pagu) };
     }
 
     function cetakArsipSubkegiatanByIndex(index) {
-        let subkeg = [...new Set(masterDPA.map(item => item.subkegiatan))][index];
-        let filteredItems = masterDPA.filter(item => item.subkegiatan === subkeg);
-        if (!filteredItems.length) return;
+        const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
+        const target = daftarUnik[index];
+        if (!target) return;
 
-        let instansi = document.getElementById('input-instansi').value;
-        let pa = document.getElementById('input-pa').value, nipPa = document.getElementById('input-nip-pa').value;
-        let bendahara = document.getElementById('input-bendahara').value, nipBendahara = document.getElementById('input-nip-bendahara').value;
-        let kodeSub = kodeSubkegiatanValid(filteredItems[0].kodeSubkeg) ? filteredItems[0].kodeSubkeg : ambilKodeSubkegiatan(subkeg);
-
-        let grupRekening = {}, totalKeseluruhan = 0;
-        filteredItems.forEach(item => {
-            let rek = item.rekening || '-';
-            if (!grupRekening[rek]) grupRekening[rek] = { namaRekening: item.namaRekening || 'Belanja Barang dan Jasa', subtotal: 0, items: [] };
-            grupRekening[rek].items.push(item); grupRekening[rek].subtotal += item.pagu; totalKeseluruhan += item.pagu;
+        const filteredItems = masterDPA.filter(item => {
+            const h = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+            return `${h.kodeSubkeg}|||${h.namaSubkeg}` === target.kunciUnik;
         });
 
-        let rowsHtml = '';
+        if (!filteredItems.length) {
+            alert("Tidak ada rincian belanja yang ditemukan untuk subkegiatan ini.");
+            return;
+        }
+
+        const instansi = document.getElementById('input-instansi').value || '';
+        const pa = document.getElementById('input-pa').value || '', nipPa = document.getElementById('input-nip-pa').value || '';
+        const bendahara = document.getElementById('input-bendahara').value || '', nipBendahara = document.getElementById('input-nip-bendahara').value || '';
+
+        const grupRekening = {};
+        let totalKeseluruhan = 0;
+        filteredItems.forEach(item => {
+            const rek = item.rekening || '-';
+            if (!grupRekening[rek]) grupRekening[rek] = { namaRekening: item.namaRekening || 'Belanja Barang dan Jasa', subtotal: 0, items: [] };
+            grupRekening[rek].items.push(item);
+            grupRekening[rek].subtotal += Number(item.pagu || 0);
+            totalKeseluruhan += Number(item.pagu || 0);
+        });
+
+        const rowsHtml = [];
         Object.keys(grupRekening).forEach(kodeRek => {
-            let grup = grupRekening[kodeRek];
-            rowsHtml += `<tr class="dpa-group-row"><td style="font-family:monospace;">${kodeRek}</td><td colspan="5">${grup.namaRekening}</td><td class="text-right">${formatRupiahDesimal(grup.subtotal)}</td></tr>`;
+            const grup = grupRekening[kodeRek];
+            rowsHtml.push(`<tr class="dpa-group-row"><td style="font-family:monospace;">${kodeRek}</td><td colspan="5"><b>${grup.namaRekening}</b></td><td class="text-right">${formatRupiahDesimal(grup.subtotal)}</td></tr>`);
             grup.items.forEach(item => {
-                let d = ekstrakKoefisienSatuanHarga(item.volume, item.pagu);
-                rowsHtml += `<tr><td></td><td>${item.uraian}</td><td class="text-center">${d.koefisien}</td><td class="text-center">${d.satuan}</td><td class="text-right">${d.hargaSatuan}</td><td class="text-center">-</td><td class="text-right">${formatRupiahDesimal(item.pagu)}</td></tr>`;
+                const d = ekstrakKoefisienSatuanHarga(item.volume, item.pagu);
+                rowsHtml.push(`<tr><td></td><td>${item.uraian}</td><td class="text-center">${d.koefisien}</td><td class="text-center">${d.satuan}</td><td class="text-right">${d.hargaSatuan}</td><td class="text-center">-</td><td class="text-right">${formatRupiahDesimal(item.pagu)}</td></tr>`);
             });
         });
 
         document.getElementById('print-area-dpa').innerHTML = `
-            <div style="text-align:center;margin-bottom:12px;"><h3 style="margin:0;">DOKUMEN PELAKSANAAN ANGGARAN (DPA)</h3><div style="font-size:12px;font-weight:bold;">${instansi}</div></div>
-            <table style="width:100%;margin-bottom:10px;font-size:11px;"><tr><td style="width:18%;font-weight:bold;">Kode Subkegiatan</td><td>${kodeSub}</td></tr><tr><td style="font-weight:bold;">Subkegiatan</td><td><b>${subkeg}</b></td></tr></table>
-            <table style="width:100%;font-size:10px;"><thead><tr><th>Kode Rekening</th><th>Uraian</th><th>Koefisien</th><th>Satuan</th><th>Harga</th><th>PPN</th><th>Jumlah (Rp)</th></tr></thead><tbody>${rowsHtml}<tr class="dpa-group-row"><td colspan="6" class="text-right">JUMLAH</td><td class="text-right">Rp ${formatRupiahDesimal(totalKeseluruhan)}</td></tr></tbody></table>
-            <div class="ttd-section" style="margin-top:30px;font-size:11px;"><div class="ttd-box"><p>Mengetahui,<br>Pengguna Anggaran</p><div class="ttd-space"></div><p><b>${pa}</b><br>${nipPa}</p></div><div class="ttd-box"><p>Menyetujui,<br>Bendahara Kegiatan</p><div class="ttd-space"></div><p><b>${bendahara}</b><br>${nipBendahara}</p></div></div>
+            <div style="text-align:center;margin-bottom:12px;">
+                <h3 style="margin:0;">DOKUMEN PELAKSANAAN ANGGARAN (DPA)</h3>
+                <div style="font-size:12px;font-weight:bold;">${instansi}</div>
+            </div>
+            <table style="width:100%;margin-bottom:10px;font-size:11px;">
+                <tr><td style="width:20%;font-weight:bold;">Kode Subkegiatan</td><td>: ${target.kodeSubkeg}</td></tr>
+                <tr><td style="font-weight:bold;">Nama Subkegiatan</td><td>: <b>${target.namaSubkeg}</b></td></tr>
+            </table>
+            <table style="width:100%;font-size:10px;">
+                <thead>
+                    <tr><th>Kode Rekening</th><th>Uraian</th><th>Koefisien</th><th>Satuan</th><th>Harga</th><th>PPN</th><th>Jumlah (Rp)</th></tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml.join('')}
+                    <tr class="dpa-group-row"><td colspan="6" class="text-right">JUMLAH</td><td class="text-right">Rp ${formatRupiahDesimal(totalKeseluruhan)}</td></tr>
+                </tbody>
+            </table>
+            <div class="ttd-section" style="margin-top:30px;font-size:11px;">
+                <div class="ttd-box"><p>Mengetahui,<br>Pengguna Anggaran</p><div class="ttd-space"></div><p><b>${pa}</b><br>${nipPa}</p></div>
+                <div class="ttd-box"><p>Menyetujui,<br>Bendahara Kegiatan</p><div class="ttd-space"></div><p><b>${bendahara}</b><br>${nipBendahara}</p></div>
+            </div>
         `;
         document.body.classList.add('printing-dpa');
-        setTimeout(() => { window.print(); document.body.classList.remove('printing-dpa'); }, 300);
+        setTimeout(() => { window.print(); document.body.classList.remove('printing-dpa'); }, 100);
     }
 
-    async function editArsipSubkegiatan(index) {
-        let oldName = [...new Set(masterDPA.map(item => item.subkegiatan))][index];
-        let newName = prompt("Ubah nama subkegiatan DPA:", oldName);
-        if (newName && newName.trim() && newName.trim() !== oldName) {
-            let clean = newName.trim();
-            arsipDPA[clean] = arsipDPA[oldName]; delete arsipDPA[oldName];
-            masterDPA.forEach(item => { if (item.subkegiatan === oldName) item.subkegiatan = clean; });
-            perbaruiDropdownSubkegiatan(); renderTabelArsipDPA(); cekStatusPilihanSubkegiatan();
-            await simpanDPAKeSheets(true);
+    function editArsipSubkegiatan(index) {
+        const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
+        const target = daftarUnik[index];
+        if (!target) return;
+
+        const newNameRaw = prompt("Ubah nama subkegiatan DPA (Hanya Nama):", target.namaSubkeg);
+        if (newNameRaw && newNameRaw.trim()) {
+            const hasilPisah = pisahKodeDanNamaSubkegiatan(newNameRaw, target.kodeSubkeg);
+            const cleanNama = hasilPisah.namaSubkeg;
+            const cleanKode = hasilPisah.kodeSubkeg;
+
+            if (cleanNama) {
+                const statusLama = isSubkegiatanTerkunciUnik(target.kunciUnik, target.namaSubkeg);
+                delete arsipDPA[target.kunciUnik];
+                arsipDPA[`${cleanKode}|||${cleanNama}`] = statusLama;
+
+                masterDPA.forEach(item => {
+                    const h = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+                    if (`${h.kodeSubkeg}|||${h.namaSubkeg}` === target.kunciUnik) {
+                        item.subkegiatan = cleanNama;
+                        item.kodeSubkeg = cleanKode;
+                    }
+                });
+                segarkanSemuaTampilanDPA();
+                simpanDPAKeSheets();
+            }
         }
     }
 
-    async function hapusArsipSubkegiatan(index) {
-        let target = [...new Set(masterDPA.map(item => item.subkegiatan))][index];
+    function hapusArsipSubkegiatan(index) {
+        const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
+        const target = daftarUnik[index];
         if (!target) return;
 
-        if (arsipDPA[target] === true) {
-            alert(`Subkegiatan "${target}" berstatus TERKUNCI.\nSilakan klik tombol "Buka" terlebih dahulu.`);
+        if (isSubkegiatanTerkunciUnik(target.kunciUnik, target.namaSubkeg)) {
+            alert(`Subkegiatan "${target.namaSubkeg}" berstatus TERKUNCI.\nSilakan klik tombol "Buka" terlebih dahulu.`);
             return;
         }
 
-        if (!confirm(`Hapus subkegiatan "${target}" dari DPA dan Google Sheet DPA?`)) return;
+        if (!confirm(`Hapus subkegiatan "${target.kodeSubkeg} - ${target.namaSubkeg}" dari DPA dan Google Sheet DPA?`)) return;
 
-        masterDPA = masterDPA.filter(item => item.subkegiatan !== target);
-        delete arsipDPA[target];
-        perbaruiDropdownSubkegiatan();
-        renderTabelArsipDPA();
-        cekStatusPilihanSubkegiatan();
-        await simpanDPAKeSheets(true);
+        masterDPA = masterDPA.filter(item => {
+            const h = pisahKodeDanNamaSubkegiatan(item.subkegiatan, item.kodeSubkeg);
+            return `${h.kodeSubkeg}|||${h.namaSubkeg}` !== target.kunciUnik;
+        });
+
+        delete arsipDPA[target.kunciUnik];
+        delete arsipDPA[target.namaSubkeg];
+
+        segarkanSemuaTampilanDPA();
+        simpanDPAKeSheets();
     }
 
     function renderTabelArsipDPA() {
-        let container = document.getElementById('container-tabel-arsip-dpa');
-        let uniqueSubkegs = [...new Set(masterDPA.map(item => item.subkegiatan))];
-        if (uniqueSubkegs.length === 0) {
+        const container = document.getElementById('container-tabel-arsip-dpa');
+        if (!container) return;
+
+        const daftarUnik = ambilDaftarSubkegiatanUnikDPA();
+        if (daftarUnik.length === 0) {
             container.innerHTML = '<p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari DPA.</p>';
             return;
         }
-        let html = `<table style="background:white;"><thead><tr><th style="width:5%;">No</th><th style="width:50%;">Nama Subkegiatan DPA</th><th style="width:15%;">Status DPA</th><th style="width:30%;">Aksi</th></tr></thead><tbody>`;
-        uniqueSubkegs.forEach((subkeg, idx) => {
-            let isTerkunci = arsipDPA[subkeg] === true;
-            let badge = isTerkunci
+
+        const rows = [];
+        for (let idx = 0; idx < daftarUnik.length; idx++) {
+            const sub = daftarUnik[idx];
+            const isTerkunci = isSubkegiatanTerkunciUnik(sub.kunciUnik, sub.namaSubkeg);
+            const badge = isTerkunci
                 ? '<span class="badge-arsip" style="background:#c6f6d5;color:#22543d;">🔒 Terkunci</span>'
                 : '<span class="badge-arsip" style="background:#fed7d7;color:#9b2c2c;">📂 Terbuka</span>';
-            let btnHapusAttr = isTerkunci
+            const btnHapusAttr = isTerkunci
                 ? 'disabled style="padding:3px 6px;font-size:10px;opacity:0.45;"'
                 : 'style="padding:3px 6px;font-size:10px;"';
 
-            html += `<tr><td class="text-center">${idx + 1}</td><td><b>${subkeg}</b></td><td class="text-center">${badge}</td><td class="text-center" style="white-space:nowrap;"><button type="button" class="btn btn-print" onclick="cetakArsipSubkegiatanByIndex(${idx})">🖨️ Cetak</button> <button type="button" class="btn ${isTerkunci ? 'btn-danger' : 'btn-archive'}" style="padding:3px 6px;font-size:10px;" onclick="toggleArsipDPAStatusByIndex(${idx})">${isTerkunci ? 'Buka' : 'Kunci'}</button> <button type="button" class="btn btn-warning" style="padding:3px 6px;font-size:10px;" onclick="editArsipSubkegiatan(${idx})">Edit</button> <button type="button" class="btn btn-danger" ${btnHapusAttr} onclick="hapusArsipSubkegiatan(${idx})">Hapus</button></td></tr>`;
-        });
-        container.innerHTML = html + `</tbody></table>`;
+            rows.push(`<tr><td class="text-center">${idx + 1}</td><td class="text-center" style="font-family:monospace;font-weight:600;color:#1a365d;">${sub.kodeSubkeg}</td><td><b>${sub.namaSubkeg}</b></td><td class="text-center">${badge}</td><td class="text-center" style="white-space:nowrap;"><button type="button" class="btn btn-print" onclick="cetakArsipSubkegiatanByIndex(${idx})">🖨️ Cetak</button> <button type="button" class="btn ${isTerkunci ? 'btn-danger' : 'btn-archive'}" style="padding:3px 6px;font-size:10px;" onclick="toggleArsipDPAStatusByIndex(${idx})">${isTerkunci ? 'Buka' : 'Kunci'}</button> <button type="button" class="btn btn-warning" style="padding:3px 6px;font-size:10px;" onclick="editArsipSubkegiatan(${idx})">Edit</button> <button type="button" class="btn btn-danger" ${btnHapusAttr} onclick="hapusArsipSubkegiatan(${idx})">Hapus</button></td></tr>`);
+        }
+        container.innerHTML = `<table style="background:white;"><thead><tr><th style="width:5%;">No</th><th style="width:15%;">Kode Subkegiatan</th><th style="width:35%;">Nama Subkegiatan DPA</th><th style="width:15%;">Status DPA</th><th style="width:30%;">Aksi</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
     }
 
-    async function autoGeneratePerSubkegiatanPilihan() {
-        let selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
-        if (!selectedSubkeg || arsipDPA[selectedSubkeg] !== true) return;
+    // ==================== BKU GENERATOR & TRANSAKSI ====================
 
-        let filteredItems = masterDPA.filter(item => item.subkegiatan === selectedSubkeg);
+    function autoGeneratePerSubkegiatanPilihan() {
+        const selectedSubkeg = document.getElementById('select-target-subkegiatan').value;
+        const subTerkunci = ambilDaftarSubkegiatanUnikDPA().some(s => s.namaSubkeg === selectedSubkeg && isSubkegiatanTerkunciUnik(s.kunciUnik, s.namaSubkeg));
+        if (!selectedSubkeg || !subTerkunci) return;
+
+        const indeksEksisting = arsipBKU.findIndex(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(selectedSubkeg));
+        if (indeksEksisting !== -1 && arsipBKU[indeksEksisting].terkunci === true) {
+            cekStatusPilihanSubkegiatan();
+            return;
+        }
+
+        const filteredItems = masterDPA.filter(item => item.subkegiatan === selectedSubkeg);
         if (!filteredItems.length || !confirm(`Generate ${filteredItems.length} rincian belanja untuk "${selectedSubkeg}"?`)) return;
 
-        let saldoAwalItem = dataTransaksi.find(item => item.noBukti === '000/AWAL') || { tanggal: '2026-11-01', noBukti: '000/AWAL', rekening: '-', uraian: 'Saldo Awal Kas', jenis: 'masuk', jumlah: 50000000 };
+        const saldoAwalItem = dataTransaksi.find(item => item.noBukti === '000/AWAL') || { tanggal: '2026-11-01', noBukti: '000/AWAL', rekening: '-', uraian: 'Saldo Awal Kas', jenis: 'masuk', jumlah: 50000000 };
         dataTransaksi = [saldoAwalItem];
         subkegiatanAktifTerakhir = selectedSubkeg;
-        arsipBkuAktifIndex = arsipBKU.findIndex(item => normalisasiNamaArsip(item.judul) === normalisasiNamaArsip(selectedSubkeg));
+        arsipBkuAktifIndex = indeksEksisting;
 
-        let baseDate = new Date(2026, 10, 2);
+        const baseDate = new Date(2026, 10, 2);
         filteredItems.forEach((item, idx) => {
-            let d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + idx);
-            let tglLokal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            const kodeSub = kodeSubkegiatanValid(item.kodeSubkeg) ? item.kodeSubkeg : ambilKodeSubkegiatan(selectedSubkeg);
+            const d = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + idx);
+            const tglLokal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const hasilPisah = pisahKodeDanNamaSubkegiatan(selectedSubkeg, item.kodeSubkeg);
             dataTransaksi.push({
                 tanggal: tglLokal,
                 noBukti: `KWT/${String(idx + 1).padStart(3, '0')}/XI/2026`,
-                rekening: { subkeg: kodeSub, rekening: item.rekening || '-' },
+                rekening: { subkeg: hasilPisah.kodeSubkeg, rekening: item.rekening || '-' },
                 uraian: item.volume ? `${item.uraian} (${item.volume})` : item.uraian,
                 jenis: 'keluar',
                 jumlah: item.pagu
@@ -1146,24 +1944,30 @@
         dataTransaksi = urutkanTransaksiTglDanUraian(dataTransaksi);
         renderTabel();
         renderTabelArsipBKU();
-        await simpanBKUKeSheets(true);
+        perbaruiStatusKunciFormBKU();
+        setCloudStatus('🟡 Draf BKU (Klik Arsipkan untuk Simpan)', '#fefcbf', '#744210');
     }
 
-    async function simpanTransaksi() {
-        let editIndex = parseInt(document.getElementById('edit-index').value);
-        let tanggal = normalisasiTanggalLokal(document.getElementById('trx-tanggal').value);
-        let noBukti = document.getElementById('trx-nobukti').value;
-        let inputRekening = document.getElementById('trx-rekening').value.trim() || '-';
-        let uraian = document.getElementById('trx-uraian').value;
-        let jenis = document.getElementById('trx-jenis').value;
-        let jumlah = parseFloat(document.getElementById('trx-jumlah').value);
+    function simpanTransaksi() {
+        if (isArsipBKUAktifTerkunci()) {
+            alert('Arsip BKU ini berstatus TERKUNCI dan tidak dapat ditambah atau diubah.');
+            return;
+        }
+
+        const editIndex = parseInt(document.getElementById('edit-index').value);
+        const tanggal = normalisasiTanggalLokal(document.getElementById('trx-tanggal').value);
+        const noBukti = document.getElementById('trx-nobukti').value;
+        const inputRekening = document.getElementById('trx-rekening').value.trim() || '-';
+        const uraian = document.getElementById('trx-uraian').value;
+        const jenis = document.getElementById('trx-jenis').value;
+        const jumlah = parseFloat(document.getElementById('trx-jumlah').value);
 
         if (!tanggal || !uraian || isNaN(jumlah) || jumlah <= 0) {
             alert('Mohon lengkapi tanggal, uraian, dan jumlah transaksi!');
             return;
         }
 
-        let strukturKode = inputRekening.includes('/')
+        const strukturKode = inputRekening.includes('/')
             ? { subkeg: inputRekening.split('/')[0].trim(), rekening: inputRekening.split('/')[1].trim() }
             : inputRekening;
 
@@ -1174,11 +1978,16 @@
         sinkronkanArsipAktifDariTabelUtama();
         resetFormTransaksi();
         renderTabel();
-        await simpanBKUKeSheets(true);
+        setCloudStatus('🟡 Draf BKU (Klik Arsipkan untuk Simpan)', '#fefcbf', '#744210');
     }
 
     function editTransaksi(index) {
-        let item = dataTransaksi[index];
+        if (isArsipBKUAktifTerkunci()) {
+            alert('Arsip BKU ini berstatus TERKUNCI dan tidak dapat diedit. Silakan buka kuncinya terlebih dahulu pada Daftar Arsip BKU.');
+            return;
+        }
+
+        const item = dataTransaksi[index];
         if (!item) return;
         document.getElementById('edit-index').value = index;
         document.getElementById('trx-tanggal').value = normalisasiTanggalLokal(item.tanggal);
@@ -1205,42 +2014,56 @@
         document.getElementById('btn-batal-edit').style.display = 'none';
     }
 
-    async function hapusTransaksi(index) {
-        if (confirm('Yakin ingin menghapus transaksi ini dari BKU dan Google Sheet BKU?')) {
+    function hapusTransaksi(index) {
+        if (isArsipBKUAktifTerkunci()) {
+            alert('Arsip BKU ini berstatus TERKUNCI dan tidak dapat dihapus. Silakan buka kuncinya terlebih dahulu pada Daftar Arsip BKU.');
+            return;
+        }
+
+        if (confirm('Yakin ingin menghapus transaksi ini dari tabel draf BKU?')) {
             dataTransaksi.splice(index, 1);
             sinkronkanArsipAktifDariTabelUtama();
             resetFormTransaksi();
             renderTabel();
-            await simpanBKUKeSheets(true);
+            setCloudStatus('🟡 Draf BKU (Klik Arsipkan untuk Simpan)', '#fefcbf', '#744210');
         }
     }
 
-    function renderTabelCustom(dataSet) {
+    function renderTabelCustom(dataSet, forceLocked = null) {
         const tbody = document.getElementById('bku-body');
         if (!tbody) return;
-        tbody.innerHTML = '';
+
+        if (!dataSet || dataSet.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #718096; font-style: italic; padding: 16px;">Belum ada transaksi BKU yang ditampilkan. Pilih subkegiatan DPA lalu klik EKSEKUSI, tambah transaksi manual, atau muat dari Daftar Arsip BKU.</td></tr>`;
+            return;
+        }
+
+        const isLocked = forceLocked !== null ? forceLocked : isArsipBKUAktifTerkunci();
+        const attrAksiBaris = isLocked ? 'disabled' : '';
+
         let saldoBerjalan = 0;
         let kodeSebelumnya = null;
         let tanggalSebelumnya = null;
         let noBuktiSebelumnya = null;
+        const rows = [];
 
-        dataSet.forEach((item, index) => {
-            let penerimaan = item.jenis === 'masuk' ? item.jumlah : 0;
-            let pengeluaran = item.jenis === 'keluar' ? item.jumlah : 0;
+        for (let index = 0; index < dataSet.length; index++) {
+            const item = dataSet[index];
+            const penerimaan = item.jenis === 'masuk' ? item.jumlah : 0;
+            const pengeluaran = item.jenis === 'keluar' ? item.jumlah : 0;
             saldoBerjalan += penerimaan - pengeluaran;
 
-            // Perlakuan Pengelompokan (Merapel Nilai yang Sama Berurutan)
-            let tglFormatted = normalisasiTanggalLokal(item.tanggal);
-            let htmlTanggal = (tglFormatted !== tanggalSebelumnya) ? tglFormatted : '';
+            const tglFormatted = normalisasiTanggalLokal(item.tanggal);
+            const htmlTanggal = (tglFormatted !== tanggalSebelumnya) ? tglFormatted : '';
             if (htmlTanggal !== '') tanggalSebelumnya = tglFormatted;
 
-            let noBuktiVal = item.noBukti || '-';
-            let htmlNoBukti = (noBuktiVal !== noBuktiSebelumnya) ? noBuktiVal : '';
+            const noBuktiVal = item.noBukti || '-';
+            const htmlNoBukti = (noBuktiVal !== noBuktiSebelumnya) ? noBuktiVal : '';
             if (htmlNoBukti !== '') noBuktiSebelumnya = noBuktiVal;
 
             let htmlKode = '-';
             if (typeof item.rekening === 'object' && item.rekening !== null) {
-                let sama = kodeSebelumnya && kodeSebelumnya.subkeg === item.rekening.subkeg && kodeSebelumnya.rekening === item.rekening.rekening;
+                const sama = kodeSebelumnya && kodeSebelumnya.subkeg === item.rekening.subkeg && kodeSebelumnya.rekening === item.rekening.rekening;
                 if (!sama) {
                     htmlKode = `<div class="kode-gabungan"><span class="kode-subkegiatan">${item.rekening.subkeg}</span><span>/</span><span class="kode-rekening">${item.rekening.rekening}</span></div>`;
                     kodeSebelumnya = item.rekening;
@@ -1248,7 +2071,7 @@
                     htmlKode = '';
                 }
             } else {
-                let samaTeks = kodeSebelumnya === item.rekening;
+                const samaTeks = kodeSebelumnya === item.rekening;
                 if (!samaTeks) {
                     htmlKode = item.rekening;
                     kodeSebelumnya = item.rekening;
@@ -1257,8 +2080,7 @@
                 }
             }
 
-            let tr = document.createElement('tr');
-            tr.innerHTML = `
+            rows.push(`<tr>
                 <td class="text-center">${index + 1}</td>
                 <td class="text-center">${htmlTanggal}</td>
                 <td>${htmlNoBukti}</td>
@@ -1268,11 +2090,13 @@
                 <td class="text-right">${pengeluaran > 0 ? formatRupiah(pengeluaran) : '-'}</td>
                 <td class="text-right"><b>${formatRupiah(saldoBerjalan)}</b></td>
                 <td class="text-center no-print" style="white-space:nowrap;">
-                    <button type="button" class="btn btn-warning" onclick="editTransaksi(${index})">Edit</button>
-                    <button type="button" class="btn btn-danger" onclick="hapusTransaksi(${index})">Hapus</button>
-                </td>`;
-            tbody.appendChild(tr);
-        });
+                    <button type="button" class="btn btn-warning" ${attrAksiBaris} onclick="editTransaksi(${index})">Edit</button>
+                    <button type="button" class="btn btn-danger" ${attrAksiBaris} onclick="hapusTransaksi(${index})">Hapus</button>
+                </td>
+            </tr>`);
+        }
+
+        tbody.innerHTML = rows.join('');
     }
 
     function renderTabel() { renderTabelCustom(dataTransaksi); }
@@ -1297,7 +2121,10 @@
         updateHeader();
         resetFormTransaksi();
         renderTabel();
-        muatDariGoogleSheets();
+
+        // Tampilkan data instan dari cache lokal terlebih dahulu, lalu sinkronkan dari Google Sheets di latar belakang
+        const adaCache = muatCacheLokalCepat();
+        muatDariGoogleSheets(adaCache);
     });
 </script>
 
