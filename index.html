@@ -13,12 +13,17 @@
             --border-color: #4a5568;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             margin: 0;
             padding: 20px;
             color: #2d3748;
+            overflow-x: hidden;
         }
 
         /* Halaman Kode Akses */
@@ -88,6 +93,7 @@
         }
 
         .container {
+            width: 100%;
             max-width: 1400px;
             margin: 0 auto;
             background: white;
@@ -95,6 +101,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             display: none;
+            overflow-x: hidden;
         }
 
         .nav-tabs {
@@ -167,6 +174,8 @@
             padding: 15px;
             background: #edf2f7;
             border-radius: 6px;
+            width: 100%;
+            max-width: 100%;
         }
 
         .form-grid {
@@ -174,6 +183,10 @@
             grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 12px;
             margin-bottom: 10px;
+        }
+
+        .form-group {
+            min-width: 0;
         }
 
         .form-group label {
@@ -186,6 +199,7 @@
 
         .form-group input, .form-group select {
             width: 100%;
+            max-width: 100%;
             padding: 8px;
             border: 1px solid #cbd5e0;
             border-radius: 4px;
@@ -227,8 +241,11 @@
         .btn-print:hover { background-color: #285e61; }
 
         .table-responsive {
+            width: 100%;
+            max-width: 100%;
             overflow-x: auto;
-            margin-top: 20px;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 12px;
         }
 
         table {
@@ -298,11 +315,66 @@
         .ttd-space { height: 70px; }
         #print-area-dpa { display: none; }
 
+        /* Responsif Mobile & Tablet Kecil */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+            .container {
+                padding: 14px;
+                border-radius: 6px;
+            }
+            .nav-tabs {
+                gap: 6px;
+            }
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+                flex: 1 1 auto;
+                text-align: center;
+            }
+            .sync-bar {
+                margin-left: 0;
+                width: 100%;
+                justify-content: flex-start;
+                margin-top: 4px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+            .subtitle {
+                font-size: 12px;
+                margin-bottom: 16px;
+            }
+            .form-section, .action-buttons {
+                padding: 12px;
+                margin-bottom: 14px;
+            }
+            .form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px;
+            }
+            .form-grid > div {
+                grid-column: span 1 !important;
+            }
+            .ttd-section {
+                flex-direction: column;
+                align-items: center;
+                gap: 24px;
+                margin-top: 28px;
+            }
+            .ttd-box {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
         @media print {
-            body { background: white; padding: 0; margin: 0; }
+            body { background: white; padding: 0; margin: 0; overflow-x: visible; }
             #auth-screen { display: none !important; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; display: block !important; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; display: block !important; overflow-x: visible; }
             .form-section, .action-buttons, .no-print, .nav-tabs { display: none !important; }
+            .table-responsive { overflow-x: visible !important; }
             table { font-size: 10px; }
 
             body:not(.printing-dpa) #page-bku { display: block !important; }
@@ -437,7 +509,7 @@
                 <strong>📦 Arsip BKU:</strong>
                 <button type="button" class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="muatDariGoogleSheets()">🔄 Refresh Data dari Google Sheet</button>
             </div>
-            <div id="container-tabel-arsip-bku" style="font-size: 12px; margin-top: 8px;">
+            <div id="container-tabel-arsip-bku" class="table-responsive" style="font-size: 12px; margin-top: 8px;">
                 <p style="color: #718096; font-style: italic;">Belum ada arsip BKU yang disimpan.</p>
             </div>
         </div>
@@ -477,14 +549,14 @@
                     <input type="number" id="trx-jumlah" placeholder="0">
                 </div>
             </div>
-            <div style="margin-top: 10px; display: flex; gap: 10px;">
+            <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-success" id="btn-simpan-trx" onclick="simpanTransaksi()">+ Tambahkan Baris ke BKU</button>
                 <button type="button" class="btn" id="btn-batal-edit" onclick="resetFormTransaksi()" style="background-color: #718096; display: none;">Batal Edit</button>
             </div>
         </div>
 
         <!-- Tabel BKU -->
-        <div class="table-responsive">
+        <div class="table-responsive" style="margin-top: 20px;">
             <table id="tabel-bku">
                 <thead>
                     <tr>
@@ -535,7 +607,7 @@
         <div class="form-section no-print" style="background: #e2e8f0; border-left: 4px solid var(--secondary-color);">
             <strong>📁 Unggah RAB (Excel):</strong>
             <div style="margin-top: 10px;">
-                <input type="file" id="file-dpa" accept=".xlsx, .xls" onchange="muatDPAExcel(event)" style="font-size: 13px; background: white; padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0;">
+                <input type="file" id="file-dpa" accept=".xlsx, .xls" onchange="muatDPAExcel(event)" style="width: 100%; max-width: 100%; font-size: 13px; background: white; padding: 5px; border-radius: 4px; border: 1px solid #cbd5e0;">
             </div>
         </div>
 
@@ -588,7 +660,7 @@
                     <input type="hidden" id="dpa-pagu" value="0">
                 </div>
             </div>
-            <div style="margin-top: 10px; display: flex; gap: 10px;">
+            <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-success" id="btn-simpan-dpa-manual" onclick="simpanItemDPAManual()">+ Tambahkan Rincian RAB</button>
                 <button type="button" class="btn" id="btn-batal-edit-dpa" onclick="resetFormDPAManual()" style="background-color: #718096; display: none;">Batal Edit</button>
             </div>
@@ -597,7 +669,7 @@
         <!-- Manajemen Status Subkegiatan RAB -->
         <div class="form-section no-print" style="background: #fffaf0; border: 1px solid #eebc6a;">
             <strong>📦 Manajemen RAB:</strong>
-            <div id="container-tabel-arsip-dpa" style="font-size: 12px; margin-top: 8px;">
+            <div id="container-tabel-arsip-dpa" class="table-responsive" style="font-size: 12px; margin-top: 8px;">
                 <p style="color: #718096; font-style: italic;">Belum ada subkegiatan yang dimuat dari RAB.</p>
             </div>
         </div>
@@ -606,7 +678,7 @@
         <div class="form-section no-print" style="background: #f7fafc; border: 1px solid #cbd5e0;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <strong>📋 Daftar Rincian Item RAB:</strong>
-                <select id="filter-subkeg-rincian-dpa" onchange="renderTabelRincianDPA()" style="padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 12px; max-width: 450px;">
+                <select id="filter-subkeg-rincian-dpa" onchange="renderTabelRincianDPA()" style="padding: 6px; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 12px; width: 100%; max-width: 450px;">
                     <option value="">-- Pilih Subkegiatan --</option>
                 </select>
             </div>
